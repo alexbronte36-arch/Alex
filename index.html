@@ -252,7 +252,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 0.8rem;  /* 调整后的间距 */
+            margin-top: 0.8rem;  /* 间距调整为0.8rem */
             margin-bottom: 1.8rem;
             padding-bottom: 0.8rem;
             border-bottom: 1px solid #e8ddce;
@@ -345,8 +345,15 @@
             margin-bottom: 0.3rem;
         }
         .delete-icon {
-            cursor: pointer; color: #c25d3a; font-size: 1.1rem;
-            background: none; border: none; padding: 0 6px;
+            cursor: pointer;
+            color: #c25d3a;
+            font-size: 1.2rem;
+            background: none;
+            border: none;
+            padding: 0 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .delete-note-icon {
             cursor: pointer; color: #c25d3a; font-size: 0.9rem;
@@ -1005,13 +1012,13 @@
     }
     function enableBookInlineEdit(book,field,element){ const card=element.closest('.book-card'); if(!card) return; card.classList.add('editing-mode'); const orig=field==='title'?book.bookTitle:book.bookAuthor; const input=document.createElement('input'); input.type='text'; input.value=orig; input.className=field==='title'?'book-title editable':'book-author editable'; element.replaceWith(input); input.focus(); const save=()=>{ const newVal=input.value.trim()||orig; if(field==='title') book.bookTitle=newVal; else book.bookAuthor=newVal; book.bookKey=`${book.bookTitle}|${book.bookAuthor}`; saveUserData(); saveToHistory(groupsData); renderBooksList(); }; input.addEventListener('blur',save); input.addEventListener('keypress',e=>{ if(e.key==='Enter') input.blur(); }); }
 
-    // 详情视图（含批量编辑、备注独立编辑删除、保留无标注书籍）
+    // 详情视图（含批量编辑、备注独立编辑删除、保留无标注书籍、修复垃圾桶删除）
     let batchMode = false;
     function showDetailsView(bookKey) { const book=groupsData.find(g=>g.bookKey===bookKey); if(!book) return; currentBookKey=bookKey; currentView='details'; isEditMode=false; batchMode=false; inputPanel.classList.add('hidden'); searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; renderDetailsView(book); booksViewDiv.style.display='none'; detailsViewDiv.style.display='block'; }
     function backToBooks() { booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; isEditMode=false; batchMode=false; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
     function autoResizeTextarea(ta) { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; }
 
-    // 修复后的 startEditAnnotation，确保垃圾桶按钮存在且事件正常
+    // 核心修复：编辑模式下垃圾桶删除功能
     function startEditAnnotation(book, idx, element) {
         if (isEditMode || batchMode) return;
         isEditMode = true;
@@ -1020,11 +1027,11 @@
         const notesHtml = item.notes.map((n, noteIdx) => `<div class="note-text" data-note-index="${noteIdx}">${escapeHtml(n)}</div>`).join('');
         const metaHtml = `<div class="note-meta">${item.location ? `📍 位置 ${escapeHtml(item.location)}` : ''}${item.date ? ` · 📅 ${escapeHtml(item.date)}` : ''}</div>`;
         
-        // 重建编辑界面
+        // 生成编辑界面，删除按钮只显示垃圾桶图标
         noteCard.innerHTML = `
             <textarea class="edit-highlight-textarea">${escapeHtml(item.highlight)}</textarea>
-            <div style="margin: 0.5rem 0;">
-                <button class="delete-icon" style="background: none; border: none; color: #c25d3a; cursor: pointer; font-size: 1rem;">🗑️ 删除这条标注</button>
+            <div style="margin-top: 0.5rem; text-align: right;">
+                <button class="delete-icon" data-index="${idx}" title="删除标注">🗑️</button>
             </div>
             <div class="notes-container">${notesHtml}</div>
             ${metaHtml}
@@ -1032,32 +1039,32 @@
         
         const ta = noteCard.querySelector('.edit-highlight-textarea');
         autoResizeTextarea(ta);
-        ta.addEventListener('input', () => autoResizeTextarea(ta));
+        ta.addEventListener('input', function () { autoResizeTextarea(this); });
         ta.focus();
         
-        // 保存函数
+        // 保存函数（blur 时触发）
         const saveOnBlur = () => {
             const newText = ta.value.trim();
             if (newText && book.items[idx]) book.items[idx].highlight = newText;
-            const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
-            if (idx2 !== -1) groupsData[idx2] = book;
+            const bookIdx = groupsData.findIndex(g => g.bookKey === book.bookKey);
+            if (bookIdx !== -1) groupsData[bookIdx] = book;
             saveUserData();
             saveToHistory(groupsData);
             isEditMode = false;
             renderDetailsView(book, false);
         };
         
-        // 删除按钮处理
+        // 删除按钮事件
         const delBtn = noteCard.querySelector('.delete-icon');
         if (delBtn) {
             delBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // 临时移除 blur 事件，避免保存干扰
+                // 临时移除 blur 事件，防止保存干扰
                 ta.removeEventListener('blur', saveOnBlur);
                 showConfirm('确定要删除这条标注及其所有备注吗？', () => {
                     book.items.splice(idx, 1);
-                    const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
-                    if (idx2 !== -1) groupsData[idx2] = book;
+                    const bookIdx = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                    if (bookIdx !== -1) groupsData[bookIdx] = book;
                     saveUserData();
                     saveToHistory(groupsData);
                     isEditMode = false;
@@ -1065,12 +1072,12 @@
                 });
             });
         } else {
-            console.warn('垃圾桶按钮未找到');
+            console.warn('删除按钮未找到');
         }
         
         ta.addEventListener('blur', saveOnBlur);
         
-        // 备注编辑逻辑（与之前相同）
+        // 备注编辑逻辑
         noteCard.querySelectorAll('.note-text').forEach(noteDiv => {
             noteDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1084,23 +1091,23 @@
                 const saveNote = () => {
                     const newNote = textarea.value.trim();
                     if (newNote) book.items[idx].notes[noteIdx] = newNote;
-                    else book.items[idx].notes.splice(noteIdx, 1);
-                    const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
-                    if (idx2 !== -1) groupsData[idx2] = book;
+                    else book.items[idx].notes.splice(noteIdx,1);
+                    const bookIdx = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                    if (bookIdx !== -1) groupsData[bookIdx] = book;
                     saveUserData();
                     saveToHistory(groupsData);
                     renderDetailsView(book, false);
                 };
                 textarea.addEventListener('blur', saveNote);
-                textarea.addEventListener('keypress', e => { if (e.key === 'Enter') textarea.blur(); });
+                textarea.addEventListener('keypress', e => { if(e.key === 'Enter') textarea.blur(); });
                 const delNoteBtn = document.createElement('button');
                 delNoteBtn.innerHTML = '🗑️';
                 delNoteBtn.className = 'delete-note-icon';
                 delNoteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    book.items[idx].notes.splice(noteIdx, 1);
-                    const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
-                    if (idx2 !== -1) groupsData[idx2] = book;
+                    book.items[idx].notes.splice(noteIdx,1);
+                    const bookIdx = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                    if (bookIdx !== -1) groupsData[bookIdx] = book;
                     saveUserData();
                     saveToHistory(groupsData);
                     renderDetailsView(book, false);
@@ -1112,7 +1119,7 @@
             });
         });
     }
-    
+
     function renderDetailsView(book, editMode=false) {
         const {bookTitle,bookAuthor,items,readYearMonth}=book;
         const displayDate=readYearMonth||(book.readYear?book.readYear+'年':'未知');
