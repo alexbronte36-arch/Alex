@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>My Clippings · 书籍视图与标注编辑</title>
+    <title>My Clippings - 看见我的阅读足迹</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -234,7 +234,6 @@
         }
         .book-title.editable { font-size: 0.9rem; font-weight: 600; color: #3b2c1f; }
         .book-author.editable { font-size: 0.75rem; color: #b7a07e; font-weight: bold; }
-        /* 文艺装饰 */
         .book-decoration {
             padding: 0.5rem 1rem 0.8rem;
             text-align: center;
@@ -502,7 +501,6 @@
     // ==================== 清除所有旧数据 ====================
     (function clearAllOldData() {
         localStorage.clear();
-        // 清空 IndexedDB 封面数据库
         const req = indexedDB.deleteDatabase('KindleClippingsCovers');
         req.onsuccess = () => console.log('旧数据库已清除');
         req.onerror = () => console.warn('无法清除数据库');
@@ -601,13 +599,13 @@
                 dropdown.className = 'account-dropdown';
                 document.querySelector('.user-info').appendChild(dropdown);
             }
-            dropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button><button id="statsBtn">阅读时间轴统计</button>`;
+            // 只保留修改密码和删除账号，移除阅读时间轴统计
+            dropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button>`;
             dropdown.classList.remove('show');
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
             document.addEventListener('click', (e) => { if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); });
             document.getElementById('changePwdBtn').addEventListener('click', showChangePasswordModal);
             document.getElementById('deleteAccBtn').addEventListener('click', showDeleteAccountModal);
-            document.getElementById('statsBtn').addEventListener('click', () => showTimeline());
         } else {
             authArea.innerHTML = `<button id="loginBtn" class="auth-btn">登录</button><button id="registerBtn" class="auth-btn">注册</button><button id="forgotBtn" class="auth-btn">忘记密码</button>`;
             document.getElementById('loginBtn').addEventListener('click', () => showAuthModal('login'));
