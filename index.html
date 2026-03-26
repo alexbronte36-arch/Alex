@@ -300,6 +300,23 @@
             background: rgba(210, 180, 140, 0.2);
             border-radius: 8px;
         }
+        .note-text {
+            background: #faf3e4; padding: 0.6rem 1rem; border-radius: 14px;
+            font-size: 0.95rem; color: #5a4732; margin: 0.6rem 0;
+            border-left: 2px solid #e2cfb0;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .note-text:hover { background: rgba(210,180,140,0.1); }
+        .note-text::before { content: "✍️ 笔记 "; font-size: 0.75rem; color: #bc9a6c; font-weight: 500; }
+        .note-text.batch-selectable {
+            cursor: pointer;
+        }
+        .note-text.batch-selectable.selected {
+            background: rgba(210, 180, 140, 0.3);
+            border-radius: 8px;
+        }
         .highlight-text {
             font-family: 'Times New Roman', 'SimSun', '宋体', serif;
             font-weight: bold;
@@ -313,16 +330,6 @@
             transition: background 0.2s;
         }
         .highlight-text:hover { background: rgba(210,180,140,0.2); }
-        .note-text {
-            background: #faf3e4; padding: 0.6rem 1rem; border-radius: 14px;
-            font-size: 0.95rem; color: #5a4732; margin: 0.6rem 0;
-            border-left: 2px solid #e2cfb0;
-            cursor: pointer;
-            position: relative;
-            transition: background 0.2s;
-        }
-        .note-text:hover { background: rgba(210,180,140,0.1); }
-        .note-text::before { content: "✍️ 笔记 "; font-size: 0.75rem; color: #bc9a6c; font-weight: 500; }
         .note-meta {
             font-size: 0.95rem; color: #8b765a; margin-top: 0.2rem; font-family: monospace;
         }
@@ -927,13 +934,7 @@
     // ==================== 历史记录 ====================
     let historyStack = [], historyIndex = -1;
     const MAX_HISTORY = 30;
-    function saveToHistory(data) {
-        historyStack = historyStack.slice(0, historyIndex+1);
-        historyStack.push(JSON.parse(JSON.stringify(data)));
-        if(historyStack.length>MAX_HISTORY) historyStack.shift();
-        historyIndex = historyStack.length-1;
-        updateUndoRedoButtons();
-    }
+    function saveToHistory(data) { historyStack = historyStack.slice(0, historyIndex+1); historyStack.push(JSON.parse(JSON.stringify(data))); if(historyStack.length>MAX_HISTORY) historyStack.shift(); historyIndex = historyStack.length-1; updateUndoRedoButtons(); }
     function undo() {
         if (historyIndex > 0) {
             historyIndex--;
@@ -941,7 +942,6 @@
             if (currentView === 'details') {
                 const book = groupsData.find(g => g.bookKey === currentBookKey);
                 if (book) {
-                    // 重新计算年份月份
                     book.readYear = extractReadYearFromItems(book.items);
                     book.readYearMonth = extractReadYearMonthStr(book.items);
                     renderDetailsView(book, false);
@@ -1054,13 +1054,12 @@
     }
     function enableBookInlineEdit(book,field,element){ const card=element.closest('.book-card'); if(!card) return; card.classList.add('editing-mode'); const orig=field==='title'?book.bookTitle:book.bookAuthor; const input=document.createElement('input'); input.type='text'; input.value=orig; input.className=field==='title'?'book-title editable':'book-author editable'; element.replaceWith(input); input.focus(); const save=()=>{ const newVal=input.value.trim()||orig; if(field==='title') book.bookTitle=newVal; else book.bookAuthor=newVal; book.bookKey=`${book.bookTitle}|${book.bookAuthor}`; saveUserData(); saveToHistory(groupsData); renderBooksList(); }; input.addEventListener('blur',save); input.addEventListener('keypress',e=>{ if(e.key==='Enter') input.blur(); }); }
 
-    // 详情视图（含批量编辑、备注编辑、右键删除标注）
+    // 详情视图（含批量编辑、备注独立右键删除和批量选择）
     let batchMode = false;
     function showDetailsView(bookKey) { const book=groupsData.find(g=>g.bookKey===bookKey); if(!book) return; currentBookKey=bookKey; currentView='details'; isEditMode=false; batchMode=false; inputPanel.classList.add('hidden'); searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; renderDetailsView(book); booksViewDiv.style.display='none'; detailsViewDiv.style.display='block'; }
     function backToBooks() { booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; isEditMode=false; batchMode=false; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
     function autoResizeTextarea(ta) { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; }
 
-    // 标注编辑模式（只编辑文本，无删除按钮）
     function startEditAnnotation(book, idx, element) {
         if(isEditMode||batchMode) return;
         isEditMode=true;
@@ -1087,7 +1086,7 @@
             renderDetailsView(book,false);
         };
         ta.addEventListener('blur', saveOnBlur);
-        // 备注编辑
+        // 备注编辑（与之前相同，保留删除备注按钮）
         noteCard.querySelectorAll('.note-text').forEach(noteDiv => {
             noteDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1109,6 +1108,7 @@
                 };
                 textarea.addEventListener('blur', saveNote);
                 textarea.addEventListener('keypress', e => { if(e.key === 'Enter') textarea.blur(); });
+                // 删除备注按钮
                 const delNoteBtn = document.createElement('button');
                 delNoteBtn.innerHTML = '🗑️';
                 delNoteBtn.className = 'delete-note-icon';
@@ -1134,14 +1134,15 @@
         let itemsHtml='';
         for(let idx=0; idx<items.length; idx++){
             const item=items[idx];
-            const notesHtml = item.notes.map(n => `<div class="note-text">${escapeHtml(n)}</div>`).join('');
+            const notesHtml = item.notes.map((n, nIdx) => `<div class="note-text" data-note-index="${nIdx}">${escapeHtml(n)}</div>`).join('');
             const metaHtml=`<div class="note-meta">${item.location?`📍 位置 ${escapeHtml(item.location)}`:''}${item.date?` · 📅 ${escapeHtml(item.date)}`:''}</div>`;
             itemsHtml+=`<div class="note-card" data-item-index="${idx}" ${batchMode?`style="cursor:pointer;"`:''}>${batchMode?`<div class="checkbox" style="position:absolute; left:-1.2rem;">&nbsp;</div>`:''}<div class="highlight-text" data-index="${idx}">${escapeHtml(item.highlight)}</div><div class="notes-container">${notesHtml}</div>${metaHtml}</div>`;
         }
         const batchBar = batchMode ? `<div class="batch-bar"><button id="batchDeleteBtn" class="primary">删除选中项</button><button id="exitBatchBtn" class="edit-btn">退出批量编辑</button></div>` : '';
         detailsViewDiv.innerHTML = `<button class="back-button" id="backToBooksBtn">← 返回书籍列表</button><div class="details-header"><div class="title-author"><h2>${escapeHtml(bookTitle)}</h2><div class="author">${escapeHtml(bookAuthor)}</div><div class="read-date">阅读时间 ${escapeHtml(displayDate)}</div></div><button id="batchModeBtn" class="batch-edit-btn" style="${batchMode?'display:none;':''}">📋 批量编辑</button></div><div id="itemsContainer">${itemsHtml || '<div class="empty-state">暂无标注</div>'}</div>${batchBar}</div>`;
         document.getElementById('backToBooksBtn').addEventListener('click',backToBooks);
-        // 右键删除标注
+        
+        // 右键删除标注（整条标注）
         document.querySelectorAll('.note-card').forEach(card => {
             card.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
@@ -1156,75 +1157,100 @@
                 });
             });
         });
+        
+        // 右键删除单个备注（非批量模式下）
+        if (!batchMode) {
+            document.querySelectorAll('.note-text').forEach(noteEl => {
+                noteEl.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const noteCard = noteEl.closest('.note-card');
+                    const itemIdx = parseInt(noteCard.getAttribute('data-item-index'));
+                    const noteIdx = parseInt(noteEl.getAttribute('data-note-index'));
+                    if (isNaN(itemIdx) || isNaN(noteIdx)) return;
+                    showConfirm('确定要删除这条备注吗？', () => {
+                        book.items[itemIdx].notes.splice(noteIdx, 1);
+                        const idx = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                        if(idx !== -1) groupsData[idx] = book;
+                        saveUserData(); saveToHistory(groupsData);
+                        renderDetailsView(book, false);
+                    });
+                });
+            });
+        }
+
         if(!batchMode) document.getElementById('batchModeBtn')?.addEventListener('click',()=>{ batchMode=true; renderDetailsView(book,false); });
         if(batchMode){
+            // 为标注卡片和备注添加可选中样式
             const cards = document.querySelectorAll('.note-card');
-            cards.forEach((card, idx) => {
+            cards.forEach(card => {
                 card.classList.add('batch-selectable');
                 card.addEventListener('click', (e) => {
                     e.stopPropagation();
                     card.classList.toggle('selected');
                 });
             });
+            const notes = document.querySelectorAll('.note-text');
+            notes.forEach(note => {
+                note.classList.add('batch-selectable');
+                note.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    note.classList.toggle('selected');
+                });
+            });
             document.getElementById('batchDeleteBtn')?.addEventListener('click',()=>{
-                const selected = Array.from(document.querySelectorAll('.note-card.selected')).map(card => {
+                const selectedCards = Array.from(document.querySelectorAll('.note-card.selected')).map(card => {
                     const idxAttr = card.getAttribute('data-item-index');
                     return idxAttr ? parseInt(idxAttr) : -1;
                 }).filter(i=>i>=0);
-                if(!selected.length){ alert('请至少选择一个标注'); return; }
-                showConfirm(`确定要删除选中的 ${selected.length} 条标注吗？`,()=>{
-                    const newItems = book.items.filter((_,i)=>!selected.includes(i));
-                    book.items = newItems;
-                    const idx = groupsData.findIndex(g=>g.bookKey===book.bookKey);
-                    if(idx!==-1) groupsData[idx]=book;
-                    saveUserData(); saveToHistory(groupsData); batchMode=false; renderDetailsView(book,false);
+                const selectedNotes = [];
+                document.querySelectorAll('.note-text.selected').forEach(note => {
+                    const noteCard = note.closest('.note-card');
+                    const itemIdx = parseInt(noteCard.getAttribute('data-item-index'));
+                    const noteIdx = parseInt(note.getAttribute('data-note-index'));
+                    if (!isNaN(itemIdx) && !isNaN(noteIdx)) {
+                        selectedNotes.push({ itemIdx, noteIdx });
+                    }
+                });
+                if(selectedCards.length === 0 && selectedNotes.length === 0){
+                    alert('请至少选择一个标注或备注');
+                    return;
+                }
+                showConfirm(`确定要删除选中的 ${selectedCards.length} 条标注和 ${selectedNotes.length} 条备注吗？`,()=>{
+                    // 删除选中的备注（从后往前删除避免索引变化）
+                    const notesByItem = new Map();
+                    for (let {itemIdx, noteIdx} of selectedNotes) {
+                        if (!notesByItem.has(itemIdx)) notesByItem.set(itemIdx, []);
+                        notesByItem.get(itemIdx).push(noteIdx);
+                    }
+                    for (let [itemIdx, noteIndices] of notesByItem.entries()) {
+                        // 按从大到小排序
+                        noteIndices.sort((a,b)=>b-a);
+                        for (let ni of noteIndices) {
+                            if (book.items[itemIdx] && book.items[itemIdx].notes[ni]) {
+                                book.items[itemIdx].notes.splice(ni, 1);
+                            }
+                        }
+                    }
+                    // 删除选中的标注（从后往前）
+                    const sortedCards = selectedCards.sort((a,b)=>b-a);
+                    for (let idx of sortedCards) {
+                        if (book.items[idx]) {
+                            book.items.splice(idx, 1);
+                        }
+                    }
+                    const bookIdx = groupsData.findIndex(g=>g.bookKey===book.bookKey);
+                    if(bookIdx !== -1) groupsData[bookIdx] = book;
+                    saveUserData(); saveToHistory(groupsData);
+                    batchMode = false;
+                    renderDetailsView(book, false);
                 });
             });
             document.getElementById('exitBatchBtn')?.addEventListener('click',()=>{ batchMode=false; renderDetailsView(book,false); });
         }
         if(!editMode && !batchMode){
             document.querySelectorAll('.highlight-text').forEach(el=>el.addEventListener('click',(e)=>{ e.stopPropagation(); const idx=parseInt(el.getAttribute('data-index')); if(!isNaN(idx)) startEditAnnotation(book,idx,el); }));
-            document.querySelectorAll('.note-text').forEach(noteEl=>{
-                noteEl.addEventListener('click',(e)=>{
-                    e.stopPropagation();
-                    const noteCard = noteEl.closest('.note-card');
-                    const itemIdx = parseInt(noteCard.getAttribute('data-item-index'));
-                    const noteIdx = Array.from(noteCard.querySelectorAll('.note-text')).indexOf(noteEl);
-                    if(isNaN(itemIdx) || noteIdx===-1) return;
-                    const item = book.items[itemIdx];
-                    const originalNote = item.notes[noteIdx];
-                    const textarea = document.createElement('textarea');
-                    textarea.value = originalNote;
-                    textarea.className = 'edit-note-textarea';
-                    autoResizeTextarea(textarea);
-                    const saveNote = () => {
-                        const newNote = textarea.value.trim();
-                        if (newNote) item.notes[noteIdx] = newNote;
-                        else item.notes.splice(noteIdx,1);
-                        const idx2 = groupsData.findIndex(g=>g.bookKey===book.bookKey);
-                        if(idx2!==-1) groupsData[idx2]=book;
-                        saveUserData(); saveToHistory(groupsData);
-                        renderDetailsView(book,false);
-                    };
-                    textarea.addEventListener('blur', saveNote);
-                    textarea.addEventListener('keypress', e => { if(e.key === 'Enter') textarea.blur(); });
-                    const delNoteBtn = document.createElement('button');
-                    delNoteBtn.innerHTML = '🗑️';
-                    delNoteBtn.className = 'delete-note-icon';
-                    delNoteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        item.notes.splice(noteIdx,1);
-                        const idx2 = groupsData.findIndex(g=>g.bookKey===book.bookKey);
-                        if(idx2!==-1) groupsData[idx2]=book;
-                        saveUserData(); saveToHistory(groupsData);
-                        renderDetailsView(book,false);
-                    });
-                    noteEl.innerHTML = '';
-                    noteEl.appendChild(textarea);
-                    noteEl.appendChild(delNoteBtn);
-                    textarea.focus();
-                });
-            });
+            // 单击备注编辑已在 startEditAnnotation 中处理，这里不再重复
         }
     }
 
