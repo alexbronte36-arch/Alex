@@ -252,6 +252,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            margin-top: 2rem;  /* 加大返回按钮与书名间距，原为0，现为2rem，相当于原间距3倍 */
             margin-bottom: 1.8rem;
             padding-bottom: 0.8rem;
             border-bottom: 1px solid #e8ddce;
@@ -329,7 +330,7 @@
             border-radius: 12px; padding: 0.6rem;
             font-family: 'Times New Roman', 'SimSun', '宋体', serif;
             font-weight: bold;
-            font-size: 1.2rem; /* 增大字号 */
+            font-size: 1.2rem;
             line-height: 1.5;
             resize: none;
             margin-bottom: 0.5rem;
@@ -467,16 +468,16 @@
         <div class="input-panel" id="inputPanel">
             <textarea id="clippingsInput" placeholder="粘贴 Kindle My Clippings.txt 的内容..."></textarea>
             <div class="button-group">
-                <button id="parseBtn" class="primary">✨ 增量导入 & 合并去重</button>
+                <button id="parseBtn" class="primary">✨ 导入剪贴本</button>
                 <button id="loadExampleBtn">📖 加载示例</button>
-                <button id="clearAllBtn">🗑️ 清空所有分组</button>
+                <button id="clearAllBtn">🗑️ 清空所有书籍</button>
             </div>
             <div id="randomQuotePanel" class="random-quote"></div>
         </div>
 
         <div class="output-panel">
             <div id="booksView" class="books-view">
-                <div class="empty-state">✨ 暂无书籍，粘贴剪贴内容后点击「增量导入 & 合并去重」</div>
+                <div class="empty-state">✨ 暂无书籍，粘贴剪贴内容后点击「✨ 导入剪贴本」</div>
             </div>
             <div id="searchResultsView" class="search-results" style="display: none;"></div>
             <div id="detailsView" class="details-view" style="display: none;"></div>
@@ -1004,7 +1005,7 @@
     }
     function enableBookInlineEdit(book,field,element){ const card=element.closest('.book-card'); if(!card) return; card.classList.add('editing-mode'); const orig=field==='title'?book.bookTitle:book.bookAuthor; const input=document.createElement('input'); input.type='text'; input.value=orig; input.className=field==='title'?'book-title editable':'book-author editable'; element.replaceWith(input); input.focus(); const save=()=>{ const newVal=input.value.trim()||orig; if(field==='title') book.bookTitle=newVal; else book.bookAuthor=newVal; book.bookKey=`${book.bookTitle}|${book.bookAuthor}`; saveUserData(); saveToHistory(groupsData); renderBooksList(); }; input.addEventListener('blur',save); input.addEventListener('keypress',e=>{ if(e.key==='Enter') input.blur(); }); }
 
-    // 详情视图（含批量编辑、备注独立编辑删除）
+    // 详情视图（含批量编辑、备注独立编辑删除、保留无标注书籍）
     let batchMode = false;
     function showDetailsView(bookKey) { const book=groupsData.find(g=>g.bookKey===bookKey); if(!book) return; currentBookKey=bookKey; currentView='details'; isEditMode=false; batchMode=false; inputPanel.classList.add('hidden'); searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; renderDetailsView(book); booksViewDiv.style.display='none'; detailsViewDiv.style.display='block'; }
     function backToBooks() { booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; isEditMode=false; batchMode=false; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
@@ -1039,10 +1040,15 @@
         const delBtn=noteCard.querySelector('.delete-icon');
         delBtn.addEventListener('click',(e)=>{
             e.stopPropagation();
-            book.items.splice(idx,1);
-            saveUserData(); saveToHistory(groupsData);
-            isEditMode=false;
-            renderDetailsView(book,false);
+            // 弹出确认框
+            showConfirm('确定要删除这条标注及其所有备注吗？', () => {
+                book.items.splice(idx,1);
+                const idx2=groupsData.findIndex(g=>g.bookKey===book.bookKey);
+                if(idx2!==-1) groupsData[idx2]=book;
+                saveUserData(); saveToHistory(groupsData);
+                isEditMode=false;
+                renderDetailsView(book,false);
+            });
         });
         // 绑定每个备注的点击编辑
         noteCard.querySelectorAll('.note-text').forEach(noteDiv => {
@@ -1095,10 +1101,10 @@
             const metaHtml=`<div class="note-meta">${item.location?`📍 位置 ${escapeHtml(item.location)}`:''}${item.date?` · 📅 ${escapeHtml(item.date)}`:''}</div>`;
             itemsHtml+=`<div class="note-card" data-item-index="${idx}" ${batchMode?`style="cursor:pointer;"`:''}>${batchMode?`<div class="checkbox" style="position:absolute; left:-1.2rem;">&nbsp;</div>`:''}<div class="highlight-text" data-index="${idx}">${escapeHtml(item.highlight)}</div><div class="notes-container">${notesHtml}</div>${metaHtml}</div>`;
         }
+        // 即使 items 为空，也显示书籍信息，不显示“暂无标注”但保留书籍卡片
         const batchBar = batchMode ? `<div class="batch-bar"><button id="batchDeleteBtn" class="primary">删除选中项</button><button id="exitBatchBtn" class="edit-btn">退出批量编辑</button></div>` : '';
-        detailsViewDiv.innerHTML = `<button class="back-button" id="backToBooksBtn">← 返回书籍列表</button><div class="details-header"><div class="title-author"><h2>${escapeHtml(bookTitle)}</h2><div class="author">${escapeHtml(bookAuthor)}</div><div class="read-date">阅读时间 ${escapeHtml(displayDate)}</div></div><button id="batchModeBtn" class="batch-edit-btn" style="${batchMode?'display:none;':''}">📋 批量编辑</button></div><div id="itemsContainer">${itemsHtml||'<div class="empty-state">暂无标注</div>'}</div>${batchBar}</div>`;
+        detailsViewDiv.innerHTML = `<button class="back-button" id="backToBooksBtn">← 返回书籍列表</button><div class="details-header"><div class="title-author"><h2>${escapeHtml(bookTitle)}</h2><div class="author">${escapeHtml(bookAuthor)}</div><div class="read-date">阅读时间 ${escapeHtml(displayDate)}</div></div><button id="batchModeBtn" class="batch-edit-btn" style="${batchMode?'display:none;':''}">📋 批量编辑</button></div><div id="itemsContainer">${itemsHtml || '<div class="empty-state">暂无标注</div>'}</div>${batchBar}</div>`;
         document.getElementById('backToBooksBtn').addEventListener('click',backToBooks);
-        // 加大返回按钮与标题间距（已在 CSS 中通过 .details-header 的 margin-bottom 控制）
         if(!batchMode) document.getElementById('batchModeBtn')?.addEventListener('click',()=>{ batchMode=true; renderDetailsView(book,false); });
         if(batchMode){
             const cards = document.querySelectorAll('.note-card');
@@ -1174,7 +1180,7 @@
     // 导入导出
     async function performParse() { if(!currentUser){ alert('请先登录'); return; } const raw=document.getElementById('clippingsInput').value; if(!raw.trim()){ alert('请先粘贴 Kindle My Clippings 内容'); return; } const orig=booksViewDiv.innerHTML; booksViewDiv.innerHTML='<div class="empty-state">⏳ 正在解析并合并数据...</div>'; const newGroups=parseClippings(raw); if(!newGroups.length){ alert('未解析到有效标注/笔记，请检查格式'); booksViewDiv.innerHTML=orig; return; } const enriched=enrichBooksWithMeta(newGroups); groupsData=groupsData.length?mergeGroups(groupsData,enriched):enriched; saveUserData(); saveToHistory(groupsData); renderBooksList(); booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; if(panelVisible) inputPanel.classList.remove('hidden'); }
     function loadExample() { if(!currentUser){ alert('请先登录'); return; } document.getElementById('clippingsInput').value=`过生日的女孩 (Alex)\n- 您在第 26 页（位置 #136-138）的标注 | 添加于 2025年12月15日星期一 下午10:25:09\n\n雨被风吹着，敲打在玻璃窗上，发出错落不齐的响声。\n==========\nCanITellYouSomething (Alex)\n- 您在第 12 页（位置 #140-141）的标注 | 添加于 2025年12月23日星期二 下午8:15:38\n\nboth legs of the journey.\n- 您在第 12 页（位置 #141）的笔记 | 添加于 2025年12月23日星期二 下午8:16:49\n\n这里leg\n==========\nOutOnaLimb (Hannah Bonam-Young)\n- 您在第 25 页（位置 #335-336）的标注 | 添加于 2025年11月30日星期日 下午11:36:49\n\nhis smile is beaming—far brighter than the sun.\n==========`; performParse(); }
-    function clearAllGroups() { if(!currentUser){ alert('请先登录'); return; } showConfirm('清空所有分组？',()=>{ groupsData=[]; saveUserData(); saveToHistory(groupsData); renderBooksList(); booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; if(panelVisible) inputPanel.classList.remove('hidden'); }); }
+    function clearAllGroups() { if(!currentUser){ alert('请先登录'); return; } showConfirm('清空所有书籍？',()=>{ groupsData=[]; saveUserData(); saveToHistory(groupsData); renderBooksList(); booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; if(panelVisible) inputPanel.classList.remove('hidden'); }); }
     function saveUserData() { if(currentUser) localStorage.setItem(`clippings_${currentUser}_data`, JSON.stringify(groupsData)); }
     function loadUserData() { if(!currentUser){ groupsData=[]; renderBooksList(); return; } const stored=localStorage.getItem(`clippings_${currentUser}_data`); if(stored){ try{ groupsData=JSON.parse(stored); groupsData=groupsData.map(g=>({...g, readYear:extractReadYearFromItems(g.items), readYearMonth:extractReadYearMonthStr(g.items)})); renderBooksList(); saveToHistory(groupsData); }catch(e){ groupsData=[]; renderBooksList(); } }else{ groupsData=[]; renderBooksList(); } }
 
