@@ -6,389 +6,104 @@
     <title>My Clippings - 看见我的阅读足迹</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
     <style>
-        /* 全部样式与之前稳定版本一致，此处省略以节省篇幅，但实际代码中包含所有样式 */
+        /* 所有样式与之前完全相同，此处省略以节省篇幅，实际代码中会保留完整样式 */
+        /* 注意：由于代码过长，我在最终回复中将提供完整代码。但这里仅示意，最终将包含全部样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background-color: #faf3e8;
-            font-family: system-ui, -apple-system, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
-            padding: 2rem 1rem;
-            color: #2c2418;
-        }
+        body { background-color: #faf3e8; font-family: system-ui, -apple-system, 'Segoe UI', 'Inter', 'Roboto', sans-serif; padding: 2rem 1rem; color: #2c2418; }
         .app-container { max-width: 1200px; margin: 0 auto; position: relative; }
-        .toggle-panel-btn {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            background: #e2d4c2;
-            border: none;
-            font-size: 1.5rem;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            z-index: 100;
-            transition: 0.2s;
-        }
+        .toggle-panel-btn { position: fixed; top: 1rem; left: 1rem; background: #e2d4c2; border: none; font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); z-index: 100; transition: 0.2s; }
         .toggle-panel-btn:hover { background: #cbbd9f; }
         .header { text-align: center; margin-bottom: 2rem; position: relative; margin-left: 3rem; }
-        .header h1 {
-            font-family: 'Ravie', 'Algerian', cursive;
-            font-weight: bold;
-            font-size: 2.4rem;
-            letter-spacing: 0.3rem;
-            color: #3b2c1f;
-            margin-bottom: 1.5rem;
-        }
-        .toolbar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1.5rem;
-            margin-top: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .search-box {
-            flex: 1;
-            min-width: 220px;
-            position: relative;
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        .search-box input {
-            flex: 1;
-            padding: 0.6rem 1rem;
-            border: 1px solid #ddd0bc;
-            border-radius: 40px;
-            background: white;
-            font-size: 0.9rem;
-            font-family: inherit;
-        }
-        .undo-redo {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .undo-redo button {
-            background: #e2d4c2;
-            border: none;
-            padding: 0.6rem 1rem;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        .undo-redo button.disabled {
-            opacity: 0.4;
-            cursor: default;
-        }
-        .back-search-btn, .timeline-btn, .mode-toggle-btn, .auth-btn, .account-menu-btn {
-            background: #e2d4c2;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            border-radius: 40px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #4a3a28;
-            cursor: pointer;
-        }
-        .back-search-btn:hover, .timeline-btn:hover, .mode-toggle-btn:hover, .auth-btn:hover, .account-menu-btn:hover {
-            background: #cbbd9f;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 0.8rem;
-            position: relative;
-        }
+        .header h1 { font-family: 'Ravie', 'Algerian', cursive; font-weight: bold; font-size: 2.4rem; letter-spacing: 0.3rem; color: #3b2c1f; margin-bottom: 1.5rem; }
+        .toolbar { display: flex; justify-content: flex-end; gap: 1.5rem; margin-top: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+        .search-box { flex: 1; min-width: 220px; position: relative; display: flex; gap: 0.5rem; align-items: center; }
+        .search-box input { flex: 1; padding: 0.6rem 1rem; border: 1px solid #ddd0bc; border-radius: 40px; background: white; font-size: 0.9rem; font-family: inherit; }
+        .undo-redo { display: flex; gap: 0.5rem; }
+        .undo-redo button { background: #e2d4c2; border: none; padding: 0.6rem 1rem; border-radius: 40px; font-size: 0.9rem; cursor: pointer; }
+        .undo-redo button.disabled { opacity: 0.4; cursor: default; }
+        .back-search-btn, .timeline-btn, .mode-toggle-btn, .auth-btn, .account-menu-btn { background: #e2d4c2; border: none; padding: 0.6rem 1.2rem; border-radius: 40px; font-size: 0.9rem; font-weight: 500; color: #4a3a28; cursor: pointer; }
+        .back-search-btn:hover, .timeline-btn:hover, .mode-toggle-btn:hover, .auth-btn:hover, .account-menu-btn:hover { background: #cbbd9f; }
+        .user-info { display: flex; align-items: center; gap: 0.8rem; position: relative; }
         .user-name { font-size: 0.9rem; color: #8b765a; }
-        .account-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: #fef7e8;
-            border: 1px solid #e8ddce;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            z-index: 200;
-            min-width: 160px;
-            display: none;
-            flex-direction: column;
-            padding: 0.5rem 0;
-        }
-        .account-dropdown button {
-            background: none;
-            border: none;
-            padding: 0.5rem 1rem;
-            text-align: left;
-            font-size: 0.85rem;
-            color: #4a3a28;
-            cursor: pointer;
-            width: 100%;
-            border-radius: 0;
-        }
+        .account-dropdown { position: absolute; top: 100%; right: 0; background: #fef7e8; border: 1px solid #e8ddce; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 200; min-width: 160px; display: none; flex-direction: column; padding: 0.5rem 0; }
+        .account-dropdown button { background: none; border: none; padding: 0.5rem 1rem; text-align: left; font-size: 0.85rem; color: #4a3a28; cursor: pointer; width: 100%; border-radius: 0; }
         .account-dropdown button:hover { background: #f3ecdf; }
         .account-dropdown.show { display: flex; }
         .two-columns { display: flex; gap: 1.8rem; flex-wrap: wrap; }
-        .input-panel {
-            flex: 1.2; min-width: 280px; background: #fef8ed; border-radius: 20px;
-            padding: 1.2rem; border: 1px solid #e8ddce; height: fit-content;
-            transition: all 0.3s;
-        }
+        .input-panel { flex: 1.2; min-width: 280px; background: #fef8ed; border-radius: 20px; padding: 1.2rem; border: 1px solid #e8ddce; height: fit-content; transition: all 0.3s; }
         .input-panel.hidden { display: none; }
         .output-panel { flex: 2; min-width: 320px; }
-        textarea {
-            width: 100%; height: 280px; padding: 1rem; border: 1px solid #ddd0bc;
-            border-radius: 20px; background: white; font-family: 'SF Mono', monospace;
-            font-size: 0.8rem; line-height: 1.5; resize: vertical;
-        }
+        textarea { width: 100%; height: 280px; padding: 1rem; border: 1px solid #ddd0bc; border-radius: 20px; background: white; font-family: 'SF Mono', monospace; font-size: 0.8rem; line-height: 1.5; resize: vertical; }
         .button-group { display: flex; gap: 0.8rem; margin: 1rem 0; flex-wrap: wrap; }
-        button {
-            background: #e2d4c2; border: none; padding: 0.5rem 1.2rem;
-            border-radius: 40px; font-size: 0.8rem; font-weight: 500;
-            color: #4a3a28; cursor: pointer; transition: 0.2s;
-        }
+        button { background: #e2d4c2; border: none; padding: 0.5rem 1.2rem; border-radius: 40px; font-size: 0.8rem; font-weight: 500; color: #4a3a28; cursor: pointer; transition: 0.2s; }
         button.primary { background: #cbbd9f; }
         button:hover { background: #bcaa8c; color: white; }
         .year-group { margin-bottom: 2rem; }
-        .year-title {
-            font-size: 1.2rem; font-weight: 500; color: #8b765a;
-            margin-bottom: 1rem; padding-left: 0.5rem; border-left: 3px solid #cbbd9f;
-        }
+        .year-title { font-size: 1.2rem; font-weight: 500; color: #8b765a; margin-bottom: 1rem; padding-left: 0.5rem; border-left: 3px solid #cbbd9f; }
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
-        .book-card {
-            border: 2px dashed #cbbd9f; border-radius: 20px; background: #fef7e8;
-            overflow: hidden; transition: all 0.2s; display: flex;
-            padding: 1rem;
-            gap: 1rem;
-            position: relative;
-        }
+        .book-card { border: 2px dashed #cbbd9f; border-radius: 20px; background: #fef7e8; overflow: hidden; transition: all 0.2s; display: flex; padding: 1rem; gap: 1rem; position: relative; }
         .book-card.clickable { cursor: pointer; }
         .book-card.clickable:hover { background: #fcf3e2; border-color: #b28b5e; }
         .book-card.editing-mode { cursor: default; pointer-events: none; }
         .book-card.editing-mode .book-info { pointer-events: auto; }
-        .cover-container {
-            position: relative;
-            width: 80px;
-            height: 110px;
-            flex-shrink: 0;
-        }
-        .book-cover {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #e2d9cc;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .cover-container:hover .upload-cover-icon,
-        .cover-container:hover .reset-cover-icon,
-        .cover-container:hover .paste-cover-icon {
-            opacity: 1;
-        }
-        .upload-cover-icon, .reset-cover-icon, .paste-cover-icon {
-            position: absolute;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 10;
-        }
+        .cover-container { position: relative; width: 80px; height: 110px; flex-shrink: 0; }
+        .book-cover { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; background: #e2d9cc; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+        .cover-container:hover .upload-cover-icon, .cover-container:hover .reset-cover-icon, .cover-container:hover .paste-cover-icon { opacity: 1; }
+        .upload-cover-icon, .reset-cover-icon, .paste-cover-icon { position: absolute; background: rgba(0,0,0,0.6); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; opacity: 0; transition: opacity 0.2s; z-index: 10; }
         .upload-cover-icon { bottom: 4px; right: 4px; }
         .reset-cover-icon { bottom: 4px; left: 4px; }
         .paste-cover-icon { top: 4px; right: 4px; }
         .upload-cover-icon:hover, .reset-cover-icon:hover, .paste-cover-icon:hover { background: rgba(0,0,0,0.8); }
-        .book-info {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .book-title-display {
-            font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;
-            color: #3b2c1f; word-break: break-word; cursor: pointer;
-        }
+        .book-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .book-title-display { font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; color: #3b2c1f; word-break: break-word; cursor: pointer; }
         .book-title-display:hover { background: rgba(210,180,140,0.2); border-radius: 6px; }
-        .book-author-display {
-            font-size: 0.8rem; color: #b7a07e; margin-bottom: 0.5rem;
-            cursor: pointer; font-weight: bold;
-        }
+        .book-author-display { font-size: 0.8rem; color: #b7a07e; margin-bottom: 0.5rem; cursor: pointer; font-weight: bold; }
         .book-author-display:hover { background: rgba(210,180,140,0.2); border-radius: 6px; }
         .book-date { font-size: 0.85rem; color: #b7a07e; margin-top: 0.2rem; }
-        .book-title.editable, .book-author.editable {
-            background: #fff; border: 1px solid #cbbd9f; border-radius: 8px;
-            padding: 0.2rem 0.4rem; width: 100%; font-family: inherit;
-        }
+        .book-title.editable, .book-author.editable { background: #fff; border: 1px solid #cbbd9f; border-radius: 8px; padding: 0.2rem 0.4rem; width: 100%; font-family: inherit; }
         .book-title.editable { font-size: 0.9rem; font-weight: 600; color: #3b2c1f; }
         .book-author.editable { font-size: 0.75rem; color: #b7a07e; font-weight: bold; }
-        .details-view {
-            background: #fef7e8; border-radius: 28px; padding: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
-        .details-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1.8rem;
-            padding-bottom: 0.8rem;
-            border-bottom: 1px solid #e8ddce;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .details-header .title-author {
-            flex: 1;
-        }
-        .details-header h2 {
-            font-size: 1.6rem;
-            font-weight: bold;
-            font-family: 'STFangsong', '华文仿宋', '华文楷书', serif;
-            margin-bottom: 0.3rem;
-        }
-        .details-header .author {
-            color: #8b765a;
-            font-size: 0.9rem;
-            margin-bottom: 0.2rem;
-        }
-        .details-header .read-date {
-            color: #8b765a;
-            font-size: 0.85rem;
-        }
-        .batch-edit-btn {
-            background: #e2d4c2;
-            border: none;
-            padding: 0.3rem 1rem;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        .note-card {
-            margin-bottom: 1.8rem;
-            border-left: 3px solid #d4b98c;
-            padding-left: 1.2rem;
-            position: relative;
-            transition: background 0.2s;
-        }
-        .note-card.batch-selectable {
-            cursor: pointer;
-        }
-        .note-card.batch-selectable.selected {
-            background: rgba(210, 180, 140, 0.2);
-            border-radius: 8px;
-        }
-        .highlight-text {
-            font-family: 'Times New Roman', 'SimSun', '宋体', serif;
-            font-weight: bold;
-            font-size: 1.3rem;
-            line-height: 1.6;
-            color: #3b2a1e;
-            margin-bottom: 0.3rem;
-            cursor: pointer;
-            padding: 0.2rem 0;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
+        .details-view { background: #fef7e8; border-radius: 28px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .details-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.8rem; padding-bottom: 0.8rem; border-bottom: 1px solid #e8ddce; flex-wrap: wrap; gap: 0.5rem; }
+        .details-header .title-author { flex: 1; }
+        .details-header h2 { font-size: 1.6rem; font-weight: bold; font-family: 'STFangsong', '华文仿宋', '华文楷书', serif; margin-bottom: 0.3rem; }
+        .details-header .author { color: #8b765a; font-size: 0.9rem; margin-bottom: 0.2rem; }
+        .details-header .read-date { color: #8b765a; font-size: 0.85rem; }
+        .batch-edit-btn { background: #e2d4c2; border: none; padding: 0.3rem 1rem; border-radius: 40px; font-size: 0.8rem; cursor: pointer; }
+        .note-card { margin-bottom: 1.8rem; border-left: 3px solid #d4b98c; padding-left: 1.2rem; position: relative; transition: background 0.2s; }
+        .note-card.batch-selectable { cursor: pointer; }
+        .note-card.batch-selectable.selected { background: rgba(210, 180, 140, 0.2); border-radius: 8px; }
+        .highlight-text { font-family: 'Times New Roman', 'SimSun', '宋体', serif; font-weight: bold; font-size: 1.3rem; line-height: 1.6; color: #3b2a1e; margin-bottom: 0.3rem; cursor: pointer; padding: 0.2rem 0; border-radius: 8px; transition: background 0.2s; }
         .highlight-text:hover { background: rgba(210,180,140,0.2); }
-        .note-text {
-            background: #faf3e4; padding: 0.6rem 1rem; border-radius: 14px;
-            font-size: 0.95rem; color: #5a4732; margin: 0.6rem 0;
-            border-left: 2px solid #e2cfb0;
-        }
+        .note-text { background: #faf3e4; padding: 0.6rem 1rem; border-radius: 14px; font-size: 0.95rem; color: #5a4732; margin: 0.6rem 0; border-left: 2px solid #e2cfb0; }
         .note-text::before { content: "✍️ 笔记 "; font-size: 0.75rem; color: #bc9a6c; font-weight: 500; }
-        .note-meta {
-            font-size: 0.95rem; color: #8b765a; margin-top: 0.2rem; font-family: monospace;
-        }
-        .edit-highlight-textarea {
-            width: 100%; background: #fff; border: 1px solid #cbbd9f;
-            border-radius: 12px; padding: 0.6rem;
-            font-family: 'Times New Roman', 'SimSun', '宋体', serif;
-            font-weight: bold; font-size: 1rem; line-height: 1.5; resize: none;
-            margin-bottom: 0.5rem;
-        }
-        .delete-icon {
-            cursor: pointer; color: #c25d3a; font-size: 1.1rem;
-            background: none; border: none; padding: 0 6px;
-        }
+        .note-meta { font-size: 0.95rem; color: #8b765a; margin-top: 0.2rem; font-family: monospace; }
+        .edit-highlight-textarea { width: 100%; background: #fff; border: 1px solid #cbbd9f; border-radius: 12px; padding: 0.6rem; font-family: 'Times New Roman', 'SimSun', '宋体', serif; font-weight: bold; font-size: 1rem; line-height: 1.5; resize: none; margin-bottom: 0.5rem; }
+        .delete-icon { cursor: pointer; color: #c25d3a; font-size: 1.1rem; background: none; border: none; padding: 0 6px; }
         .empty-state { text-align: center; padding: 3rem; color: #bcab90; }
-        footer {
-            text-align: center; margin-top: 2rem; color: #bcab90; font-style: italic;
-        }
-        .random-quote {
-            font-family: 'STXinwei', '华文新魏', serif;
-            font-size: 0.95rem; color: #b7a07e; text-align: center; margin-top: 1rem;
-        }
-        #footerQuote {
-            font-family: 'STXinwei', '华文新魏', serif;
-            font-size: 1.2rem; color: #b7a07e; text-align: center; margin-top: 2rem;
-        }
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
-        }
-        .modal-content {
-            background: #fef7e8; border-radius: 28px; max-width: 400px; width: 90%;
-            max-height: 80vh; overflow-y: auto; padding: 1.5rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        .modal-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e8ddce;
-        }
+        footer { text-align: center; margin-top: 2rem; color: #bcab90; font-style: italic; }
+        .random-quote { font-family: 'STXinwei', '华文新魏', serif; font-size: 0.95rem; color: #b7a07e; text-align: center; margin-top: 1rem; }
+        #footerQuote { font-family: 'STXinwei', '华文新魏', serif; font-size: 1.2rem; color: #b7a07e; text-align: center; margin-top: 2rem; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #fef7e8; border-radius: 28px; max-width: 400px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e8ddce; }
         .modal-header h3 { font-size: 1.2rem; font-weight: 500; }
-        /* 统一关闭按钮类名 */
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: #b28b5e;
-        }
-        .auth-form {
-            display: flex; flex-direction: column; gap: 1rem;
-        }
-        .auth-form input, .auth-form select {
-            padding: 0.6rem; border: 1px solid #ddd0bc; border-radius: 40px; font-size: 0.9rem;
-        }
+        .close-modal { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #b28b5e; }
+        .auth-form { display: flex; flex-direction: column; gap: 1rem; }
+        .auth-form input, .auth-form select { padding: 0.6rem; border: 1px solid #ddd0bc; border-radius: 40px; font-size: 0.9rem; }
         .auth-form button { align-self: center; }
         .error-msg { color: #c25d3a; font-size: 0.8rem; text-align: center; }
         .confirm-modal .modal-content { max-width: 300px; text-align: center; }
         .confirm-buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; }
         .confirm-buttons button { padding: 0.3rem 1rem; }
-        .batch-bar {
-            margin-top: 1.5rem;
-            text-align: center;
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-        .timeline-item {
-            margin-bottom: 1.2rem; padding: 0.8rem; background: #faf3e4;
-            border-radius: 16px; border-left: 3px solid #cbbd9f;
-        }
+        .batch-bar { margin-top: 1.5rem; text-align: center; display: flex; gap: 1rem; justify-content: center; }
+        .timeline-item { margin-bottom: 1.2rem; padding: 0.8rem; background: #faf3e4; border-radius: 16px; border-left: 3px solid #cbbd9f; }
         .timeline-year { font-weight: 600; color: #8b765a; margin-bottom: 0.5rem; }
         .timeline-books { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-        .timeline-book {
-            background: #e8ddce; padding: 0.3rem 0.8rem; border-radius: 20px;
-            font-size: 0.85rem; cursor: pointer; white-space: nowrap;
-        }
+        .timeline-book { background: #e8ddce; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
         .timeline-book:hover { background: #d4b98c; }
-        .timeline-year-item {
-            margin-bottom: 0.5rem; border-left: 2px solid #cbbd9f; padding-left: 1rem;
-        }
-        .timeline-year-header {
-            font-weight: 600; font-size: 1.1rem; color: #8b765a;
-            cursor: pointer; padding: 0.3rem 0; display: flex; align-items: center; gap: 0.5rem;
-        }
+        .timeline-year-item { margin-bottom: 0.5rem; border-left: 2px solid #cbbd9f; padding-left: 1rem; }
+        .timeline-year-header { font-weight: 600; font-size: 1.1rem; color: #8b765a; cursor: pointer; padding: 0.3rem 0; display: flex; align-items: center; gap: 0.5rem; }
         .timeline-year-header:hover { background: #faf3e4; }
         .timeline-year-header .toggle-icon { font-size: 0.8rem; transition: transform 0.2s; }
         .timeline-year-header .toggle-icon.open { transform: rotate(90deg); }
@@ -397,18 +112,10 @@
         .timeline-month { margin-bottom: 0.8rem; }
         .timeline-month-title { font-weight: 500; color: #a58e6e; margin-bottom: 0.3rem; }
         .timeline-month-books { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: 1rem; }
-        .timeline-book-item {
-            background: #e8ddce; padding: 0.2rem 0.8rem; border-radius: 20px;
-            font-size: 0.8rem; cursor: pointer; white-space: nowrap;
-        }
+        .timeline-book-item { background: #e8ddce; padding: 0.2rem 0.8rem; border-radius: 20px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
         .timeline-book-item:hover { background: #d4b98c; }
-        .search-results {
-            background: #fef7e8; border-radius: 20px; padding: 1rem;
-            margin-bottom: 1rem; max-height: 400px; overflow-y: auto;
-        }
-        .search-result-item {
-            padding: 0.8rem; border-bottom: 1px solid #e8ddce; cursor: pointer;
-        }
+        .search-results { background: #fef7e8; border-radius: 20px; padding: 1rem; margin-bottom: 1rem; max-height: 400px; overflow-y: auto; }
+        .search-result-item { padding: 0.8rem; border-bottom: 1px solid #e8ddce; cursor: pointer; }
         .search-result-item:hover { background: #faf3e4; }
         .result-book { font-weight: 600; color: #8b765a; font-size: 0.8rem; }
         .result-highlight { margin: 0.3rem 0; color: #3b2a1e; font-family: 'Times New Roman', 'SimSun', '宋体', serif; font-weight: bold; font-size: 1rem; }
@@ -493,20 +200,6 @@
 </div>
 
 <script>
-    // 所有模态框关闭按钮统一使用事件委托
-    document.addEventListener('click', function(e) {
-        // 关闭按钮：点击 .close-modal
-        if (e.target.classList.contains('close-modal')) {
-            const modal = e.target.closest('.modal');
-            if (modal) modal.style.display = 'none';
-            e.preventDefault();
-        }
-        // 点击模态框背景（半透明遮罩）关闭
-        if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
-        }
-    });
-
     // ==================== 用户认证模块 ====================
     let currentUser = null;
     const securityQuestions = [
@@ -600,12 +293,19 @@
                 dropdown.className = 'account-dropdown';
                 document.querySelector('.user-info').appendChild(dropdown);
             }
-            dropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button>`;
+            dropdown.innerHTML = `
+                <button id="changePwdBtn">修改密码</button>
+                <button id="deleteAccBtn">删除账号</button>
+                <button id="exportDataBtn">📤 导出数据</button>
+                <button id="importDataBtn">📥 导入数据</button>
+            `;
             dropdown.classList.remove('show');
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
             document.addEventListener('click', (e) => { if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); });
             document.getElementById('changePwdBtn').addEventListener('click', showChangePasswordModal);
             document.getElementById('deleteAccBtn').addEventListener('click', showDeleteAccountModal);
+            document.getElementById('exportDataBtn').addEventListener('click', exportData);
+            document.getElementById('importDataBtn').addEventListener('click', () => importData());
         } else {
             authArea.innerHTML = `<button id="loginBtn" class="auth-btn">登录</button><button id="registerBtn" class="auth-btn">注册</button><button id="forgotBtn" class="auth-btn">忘记密码</button>`;
             document.getElementById('loginBtn').addEventListener('click', () => showAuthModal('login'));
@@ -662,6 +362,118 @@
         container.innerHTML = `<div class="auth-form"><input type="password" id="delPwd" placeholder="输入密码确认删除"><button id="delAccountSubmit" class="primary">永久删除账号</button><div id="authError" class="error-msg"></div></div>`;
         modal.style.display = 'flex';
         document.getElementById('delAccountSubmit').addEventListener('click', () => { const p = document.getElementById('delPwd').value; if (!p) { document.getElementById('authError').innerText = '请输入密码'; return; } const res = deleteAccount(currentUser, p); if (res.success) { alert('账号已删除'); modal.style.display = 'none'; } else document.getElementById('authError').innerText = res.message; });
+    }
+
+    // ==================== 数据导出/导入 ====================
+    async function exportData() {
+        // 获取所有封面数据
+        const covers = [];
+        for (let group of groupsData) {
+            const coverData = await getCoverData(group.originalBookKey);
+            if (coverData) {
+                let coverExport = { bookKey: group.originalBookKey, type: coverData.type };
+                if (coverData.type === 'blob' && coverData.blob) {
+                    coverExport.blobBase64 = await blobToBase64(coverData.blob);
+                } else if (coverData.type === 'url' && coverData.url) {
+                    coverExport.url = coverData.url;
+                }
+                covers.push(coverExport);
+            }
+        }
+        const exportObj = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            groupsData: groupsData,
+            covers: covers
+        };
+        const jsonStr = JSON.stringify(exportObj, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `myclippings_backup_${new Date().toISOString().slice(0,19)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert('数据导出成功！');
+    }
+
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function base64ToBlob(base64, type) {
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        return new Blob([byteArray], { type: type || 'image/jpeg' });
+    }
+
+    async function importData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const importObj = JSON.parse(ev.target.result);
+                    if (!importObj.groupsData || !Array.isArray(importObj.groupsData)) {
+                        alert('无效的备份文件');
+                        return;
+                    }
+                    // 清空现有数据
+                    groupsData = [];
+                    await clearAllCovers();
+                    // 恢复书籍数据
+                    groupsData = importObj.groupsData;
+                    // 恢复封面
+                    if (importObj.covers && Array.isArray(importObj.covers)) {
+                        for (let cover of importObj.covers) {
+                            if (cover.type === 'blob' && cover.blobBase64) {
+                                const blob = base64ToBlob(cover.blobBase64, 'image/jpeg');
+                                await saveCoverData(cover.bookKey, { type: 'blob', blob });
+                            } else if (cover.type === 'url' && cover.url) {
+                                await saveCoverData(cover.bookKey, { type: 'url', url: cover.url });
+                            }
+                        }
+                    }
+                    // 重新计算元数据
+                    groupsData = groupsData.map(g => ({
+                        ...g,
+                        readYear: extractReadYearFromItems(g.items),
+                        readYearMonth: extractReadYearMonthStr(g.items)
+                    }));
+                    saveUserData();
+                    renderBooksList();
+                    alert('数据导入成功！');
+                } catch (err) {
+                    console.error(err);
+                    alert('解析备份文件失败');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    async function clearAllCovers() {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.clear();
+        return new Promise(resolve => { tx.oncomplete = resolve; });
     }
 
     // ==================== 封面存储与加载 ====================
