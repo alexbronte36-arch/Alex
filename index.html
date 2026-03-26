@@ -160,18 +160,15 @@
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
         .book-card {
             border: 2px dashed #cbbd9f; border-radius: 20px; background: #fef7e8;
-            overflow: hidden; transition: all 0.2s; display: flex; flex-direction: column;
+            overflow: hidden; transition: all 0.2s; display: flex;
+            padding: 1rem;
+            gap: 1rem;
             position: relative;
         }
         .book-card.clickable { cursor: pointer; }
         .book-card.clickable:hover { background: #fcf3e2; border-color: #b28b5e; }
         .book-card.editing-mode { cursor: default; pointer-events: none; }
         .book-card.editing-mode .book-info { pointer-events: auto; }
-        .book-card-content {
-            display: flex;
-            padding: 1rem;
-            gap: 1rem;
-        }
         .cover-container {
             position: relative;
             width: 80px;
@@ -234,16 +231,6 @@
         }
         .book-title.editable { font-size: 0.9rem; font-weight: 600; color: #3b2c1f; }
         .book-author.editable { font-size: 0.75rem; color: #b7a07e; font-weight: bold; }
-        .book-decoration {
-            padding: 0.5rem 1rem 0.8rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #bcab90;
-            border-top: 1px solid #ece1d2;
-            background: rgba(250, 243, 228, 0.5);
-            font-family: 'Times New Roman', 'KaiTi', serif;
-            letter-spacing: 1px;
-        }
         .details-view {
             background: #fef7e8; border-radius: 28px; padding: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -498,14 +485,6 @@
 </div>
 
 <script>
-    // ==================== 清除所有旧数据 ====================
-    (function clearAllOldData() {
-        localStorage.clear();
-        const req = indexedDB.deleteDatabase('KindleClippingsCovers');
-        req.onsuccess = () => console.log('旧数据库已清除');
-        req.onerror = () => console.warn('无法清除数据库');
-    })();
-
     // ==================== 用户认证模块 ====================
     let currentUser = null;
     const securityQuestions = [
@@ -599,7 +578,6 @@
                 dropdown.className = 'account-dropdown';
                 document.querySelector('.user-info').appendChild(dropdown);
             }
-            // 只保留修改密码和删除账号，移除阅读时间轴统计
             dropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button>`;
             dropdown.classList.remove('show');
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
@@ -773,24 +751,6 @@
         }
     }
 
-    // ==================== 文艺装饰随机数组 ====================
-    const decorations = [
-        "📖 阅读是一场灵魂的旅行",
-        "☕ 书与咖啡，时光静好",
-        "🕯️ 夜读，点亮思想的灯",
-        "🌿 文字如草木，生生不息",
-        "📚 每一本书都是一个世界",
-        "🍃 翻页的声音，是心灵的呼吸",
-        "✨ 在书里遇见另一个自己",
-        "🎋 读书，是门槛最低的高贵",
-        "🌙 与书相伴，夜不再漫长",
-        "🌸 书香致远，墨卷至恒"
-    ];
-
-    function getRandomDecoration() {
-        return decorations[Math.floor(Math.random() * decorations.length)];
-    }
-
     // ==================== 名言库 ====================
     const allQuotes = [
         { text: "文字让人死亡，精神让人活着", author: "奥古斯汀" },
@@ -857,7 +817,7 @@
     function mergeGroups(existing, newGroups) { const map=new Map(); for(let g of existing) map.set(g.originalBookKey,g); for(let ng of newGroups){ const eg=map.get(ng.originalBookKey); if(eg){ const itemsMap=new Map(); for(let it of eg.items) itemsMap.set(`${it.highlight}|${normalizeLocation(it.location)}`,it); for(let nit of ng.items){ const key=`${nit.highlight}|${normalizeLocation(nit.location)}`; if(itemsMap.has(key)){ const existingItem=itemsMap.get(key); const notesSet=new Set(existingItem.notes); for(let n of nit.notes) if(!notesSet.has(n)) existingItem.notes.push(n); } else eg.items.push(nit); } eg.readYear=extractReadYearFromItems(eg.items); eg.readYearMonth=extractReadYearMonthStr(eg.items); } else existing.push(ng); } return existing; }
     function enrichBooksWithMeta(groups) { return groups.map(g=>({...g, coverUrl:'https://via.placeholder.com/80x110?text=No+Cover', readYear:extractReadYearFromItems(g.items), readYearMonth:extractReadYearMonthStr(g.items)})); }
 
-    // 渲染书籍列表（含文艺装饰）
+    // 渲染书籍列表（无装饰）
     function renderBooksList() {
         if(!groupsData.length){ booksViewDiv.innerHTML='<div class="empty-state">📭 暂无书籍，请解析剪贴内容</div>'; return; }
         const yearMap=new Map(); for(let g of groupsData){ const y=g.readYear||0; if(!yearMap.has(y)) yearMap.set(y,[]); yearMap.get(y).push(g); }
@@ -868,22 +828,18 @@
             for(let g of yearMap.get(y)){
                 const safeTitle=escapeHtml(g.bookTitle), safeAuthor=escapeHtml(g.bookAuthor);
                 const displayDate=g.readYearMonth||(g.readYear?g.readYear+'年':'未知时间');
-                const decorationText = getRandomDecoration();
                 html+=`<div class="book-card clickable" data-originalkey="${escapeHtml(g.originalBookKey)}" data-bookkey="${escapeHtml(g.bookKey)}">
-                    <div class="book-card-content">
-                        <div class="cover-container">
-                            <img class="book-cover" data-originalkey="${escapeHtml(g.originalBookKey)}" data-title="${escapeHtml(g.bookTitle)}" data-author="${escapeHtml(g.bookAuthor)}" src="https://via.placeholder.com/80x110?text=No+Cover" alt="封面">
-                            <div class="upload-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">📷</div>
-                            <div class="reset-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">↺</div>
-                            <div class="paste-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">🔗</div>
-                        </div>
-                        <div class="book-info">
-                            <div class="book-title-display" data-field="title">${safeTitle}</div>
-                            <div class="book-author-display" data-field="author">${safeAuthor}</div>
-                            <div class="book-date">📅 ${escapeHtml(displayDate)}</div>
-                        </div>
+                    <div class="cover-container">
+                        <img class="book-cover" data-originalkey="${escapeHtml(g.originalBookKey)}" data-title="${escapeHtml(g.bookTitle)}" data-author="${escapeHtml(g.bookAuthor)}" src="https://via.placeholder.com/80x110?text=No+Cover" alt="封面">
+                        <div class="upload-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">📷</div>
+                        <div class="reset-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">↺</div>
+                        <div class="paste-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">🔗</div>
                     </div>
-                    <div class="book-decoration">${escapeHtml(decorationText)}</div>
+                    <div class="book-info">
+                        <div class="book-title-display" data-field="title">${safeTitle}</div>
+                        <div class="book-author-display" data-field="author">${safeAuthor}</div>
+                        <div class="book-date">📅 ${escapeHtml(displayDate)}</div>
+                    </div>
                 </div>`;
             }
             html+=`</div></div>`;
