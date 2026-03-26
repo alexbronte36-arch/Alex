@@ -6,7 +6,6 @@
     <title>My Clippings - 看见我的阅读足迹</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
     <style>
-        /* 所有样式与上一版本保持一致，仅修改 .details-header 的 margin-top */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #faf3e8;
@@ -253,7 +252,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 1.3rem;  /* 调整为原间距的2倍 (原约0.6rem) */
+            margin-top: 0.8rem;  /* 调整后的间距 */
             margin-bottom: 1.8rem;
             padding-bottom: 0.8rem;
             border-bottom: 1px solid #e8ddce;
@@ -1011,50 +1010,67 @@
     function showDetailsView(bookKey) { const book=groupsData.find(g=>g.bookKey===bookKey); if(!book) return; currentBookKey=bookKey; currentView='details'; isEditMode=false; batchMode=false; inputPanel.classList.add('hidden'); searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; renderDetailsView(book); booksViewDiv.style.display='none'; detailsViewDiv.style.display='block'; }
     function backToBooks() { booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; isEditMode=false; batchMode=false; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
     function autoResizeTextarea(ta) { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; }
+
+    // 修复后的 startEditAnnotation，确保垃圾桶按钮存在且事件正常
     function startEditAnnotation(book, idx, element) {
-        if(isEditMode||batchMode) return;
-        isEditMode=true;
-        const item=book.items[idx];
-        const noteCard=element.closest('.note-card');
-        const notesHtml=item.notes.map((n, noteIdx) => `<div class="note-text" data-note-index="${noteIdx}">${escapeHtml(n)}</div>`).join('');
-        const metaHtml=`<div class="note-meta">${item.location?`📍 位置 ${escapeHtml(item.location)}`:''}${item.date?` · 📅 ${escapeHtml(item.date)}`:''}</div>`;
-        noteCard.innerHTML=`
+        if (isEditMode || batchMode) return;
+        isEditMode = true;
+        const item = book.items[idx];
+        const noteCard = element.closest('.note-card');
+        const notesHtml = item.notes.map((n, noteIdx) => `<div class="note-text" data-note-index="${noteIdx}">${escapeHtml(n)}</div>`).join('');
+        const metaHtml = `<div class="note-meta">${item.location ? `📍 位置 ${escapeHtml(item.location)}` : ''}${item.date ? ` · 📅 ${escapeHtml(item.date)}` : ''}</div>`;
+        
+        // 重建编辑界面
+        noteCard.innerHTML = `
             <textarea class="edit-highlight-textarea">${escapeHtml(item.highlight)}</textarea>
-            <button class="delete-icon" data-index="${idx}">🗑️</button>
+            <div style="margin: 0.5rem 0;">
+                <button class="delete-icon" style="background: none; border: none; color: #c25d3a; cursor: pointer; font-size: 1rem;">🗑️ 删除这条标注</button>
+            </div>
             <div class="notes-container">${notesHtml}</div>
             ${metaHtml}
         `;
-        const ta=noteCard.querySelector('.edit-highlight-textarea');
+        
+        const ta = noteCard.querySelector('.edit-highlight-textarea');
         autoResizeTextarea(ta);
-        ta.addEventListener('input',function(){ autoResizeTextarea(this); });
+        ta.addEventListener('input', () => autoResizeTextarea(ta));
         ta.focus();
-        // 保存函数（用于 blur）
-        const saveOnBlur=()=>{
-            const newText=ta.value.trim();
-            if(newText && book.items[idx]) book.items[idx].highlight=newText;
-            const idx2=groupsData.findIndex(g=>g.bookKey===book.bookKey);
-            if(idx2!==-1) groupsData[idx2]=book;
-            saveUserData(); saveToHistory(groupsData);
-            isEditMode=false;
-            renderDetailsView(book,false);
+        
+        // 保存函数
+        const saveOnBlur = () => {
+            const newText = ta.value.trim();
+            if (newText && book.items[idx]) book.items[idx].highlight = newText;
+            const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
+            if (idx2 !== -1) groupsData[idx2] = book;
+            saveUserData();
+            saveToHistory(groupsData);
+            isEditMode = false;
+            renderDetailsView(book, false);
         };
-        // 绑定删除按钮，并临时解除 blur 事件避免冲突
-        const delBtn=noteCard.querySelector('.delete-icon');
-        delBtn.addEventListener('click',(e)=>{
-            e.stopPropagation();
-            // 临时移除 blur 监听，避免保存
-            ta.removeEventListener('blur', saveOnBlur);
-            showConfirm('确定要删除这条标注及其所有备注吗？', () => {
-                book.items.splice(idx,1);
-                const idx2=groupsData.findIndex(g=>g.bookKey===book.bookKey);
-                if(idx2!==-1) groupsData[idx2]=book;
-                saveUserData(); saveToHistory(groupsData);
-                isEditMode=false;
-                renderDetailsView(book,false);
+        
+        // 删除按钮处理
+        const delBtn = noteCard.querySelector('.delete-icon');
+        if (delBtn) {
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 临时移除 blur 事件，避免保存干扰
+                ta.removeEventListener('blur', saveOnBlur);
+                showConfirm('确定要删除这条标注及其所有备注吗？', () => {
+                    book.items.splice(idx, 1);
+                    const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                    if (idx2 !== -1) groupsData[idx2] = book;
+                    saveUserData();
+                    saveToHistory(groupsData);
+                    isEditMode = false;
+                    renderDetailsView(book, false);
+                });
             });
-        });
+        } else {
+            console.warn('垃圾桶按钮未找到');
+        }
+        
         ta.addEventListener('blur', saveOnBlur);
-        // 绑定每个备注的点击编辑
+        
+        // 备注编辑逻辑（与之前相同）
         noteCard.querySelectorAll('.note-text').forEach(noteDiv => {
             noteDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1068,25 +1084,26 @@
                 const saveNote = () => {
                     const newNote = textarea.value.trim();
                     if (newNote) book.items[idx].notes[noteIdx] = newNote;
-                    else book.items[idx].notes.splice(noteIdx,1);
-                    const idx2 = groupsData.findIndex(g=>g.bookKey===book.bookKey);
-                    if(idx2!==-1) groupsData[idx2]=book;
-                    saveUserData(); saveToHistory(groupsData);
-                    renderDetailsView(book,false);
+                    else book.items[idx].notes.splice(noteIdx, 1);
+                    const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                    if (idx2 !== -1) groupsData[idx2] = book;
+                    saveUserData();
+                    saveToHistory(groupsData);
+                    renderDetailsView(book, false);
                 };
                 textarea.addEventListener('blur', saveNote);
-                textarea.addEventListener('keypress', e => { if(e.key === 'Enter') textarea.blur(); });
-                // 添加删除按钮
+                textarea.addEventListener('keypress', e => { if (e.key === 'Enter') textarea.blur(); });
                 const delNoteBtn = document.createElement('button');
                 delNoteBtn.innerHTML = '🗑️';
                 delNoteBtn.className = 'delete-note-icon';
                 delNoteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    book.items[idx].notes.splice(noteIdx,1);
-                    const idx2 = groupsData.findIndex(g=>g.bookKey===book.bookKey);
-                    if(idx2!==-1) groupsData[idx2]=book;
-                    saveUserData(); saveToHistory(groupsData);
-                    renderDetailsView(book,false);
+                    book.items[idx].notes.splice(noteIdx, 1);
+                    const idx2 = groupsData.findIndex(g => g.bookKey === book.bookKey);
+                    if (idx2 !== -1) groupsData[idx2] = book;
+                    saveUserData();
+                    saveToHistory(groupsData);
+                    renderDetailsView(book, false);
                 });
                 noteDiv.innerHTML = '';
                 noteDiv.appendChild(textarea);
@@ -1095,6 +1112,7 @@
             });
         });
     }
+    
     function renderDetailsView(book, editMode=false) {
         const {bookTitle,bookAuthor,items,readYearMonth}=book;
         const displayDate=readYearMonth||(book.readYear?book.readYear+'年':'未知');
