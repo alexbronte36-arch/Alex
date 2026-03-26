@@ -6,7 +6,6 @@
     <title>My Clippings - 看见我的阅读足迹</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
     <style>
-        /* 所有样式与上一最终版本相同，仅增加 .note-card 的右键光标提示 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #faf3e8;
@@ -928,9 +927,54 @@
     // ==================== 历史记录 ====================
     let historyStack = [], historyIndex = -1;
     const MAX_HISTORY = 30;
-    function saveToHistory(data) { historyStack = historyStack.slice(0, historyIndex+1); historyStack.push(JSON.parse(JSON.stringify(data))); if(historyStack.length>MAX_HISTORY) historyStack.shift(); historyIndex = historyStack.length-1; updateUndoRedoButtons(); }
-    function undo() { if(historyIndex>0){ historyIndex--; groupsData = JSON.parse(JSON.stringify(historyStack[historyIndex])); renderBooksList(); updateUndoRedoButtons(); saveUserData(); } }
-    function redo() { if(historyIndex<historyStack.length-1){ historyIndex++; groupsData = JSON.parse(JSON.stringify(historyStack[historyIndex])); renderBooksList(); updateUndoRedoButtons(); saveUserData(); } }
+    function saveToHistory(data) {
+        historyStack = historyStack.slice(0, historyIndex+1);
+        historyStack.push(JSON.parse(JSON.stringify(data)));
+        if(historyStack.length>MAX_HISTORY) historyStack.shift();
+        historyIndex = historyStack.length-1;
+        updateUndoRedoButtons();
+    }
+    function undo() {
+        if (historyIndex > 0) {
+            historyIndex--;
+            groupsData = JSON.parse(JSON.stringify(historyStack[historyIndex]));
+            if (currentView === 'details') {
+                const book = groupsData.find(g => g.bookKey === currentBookKey);
+                if (book) {
+                    // 重新计算年份月份
+                    book.readYear = extractReadYearFromItems(book.items);
+                    book.readYearMonth = extractReadYearMonthStr(book.items);
+                    renderDetailsView(book, false);
+                } else {
+                    backToBooks();
+                }
+            } else {
+                renderBooksList();
+            }
+            updateUndoRedoButtons();
+            saveUserData();
+        }
+    }
+    function redo() {
+        if (historyIndex < historyStack.length - 1) {
+            historyIndex++;
+            groupsData = JSON.parse(JSON.stringify(historyStack[historyIndex]));
+            if (currentView === 'details') {
+                const book = groupsData.find(g => g.bookKey === currentBookKey);
+                if (book) {
+                    book.readYear = extractReadYearFromItems(book.items);
+                    book.readYearMonth = extractReadYearMonthStr(book.items);
+                    renderDetailsView(book, false);
+                } else {
+                    backToBooks();
+                }
+            } else {
+                renderBooksList();
+            }
+            updateUndoRedoButtons();
+            saveUserData();
+        }
+    }
     function updateUndoRedoButtons() { const u=document.getElementById('undoBtn'), r=document.getElementById('redoBtn'); if(u){ u.disabled = historyIndex<=0; u.classList.toggle('disabled', historyIndex<=0); } if(r){ r.disabled = historyIndex>=historyStack.length-1; r.classList.toggle('disabled', historyIndex>=historyStack.length-1); } }
 
     // ==================== 全局变量 ====================
@@ -1016,7 +1060,7 @@
     function backToBooks() { booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; isEditMode=false; batchMode=false; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
     function autoResizeTextarea(ta) { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; }
 
-    // 标注编辑模式（无删除按钮，只编辑文本）
+    // 标注编辑模式（只编辑文本，无删除按钮）
     function startEditAnnotation(book, idx, element) {
         if(isEditMode||batchMode) return;
         isEditMode=true;
@@ -1043,7 +1087,7 @@
             renderDetailsView(book,false);
         };
         ta.addEventListener('blur', saveOnBlur);
-        // 备注编辑逻辑与之前相同（略）
+        // 备注编辑
         noteCard.querySelectorAll('.note-text').forEach(noteDiv => {
             noteDiv.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1065,7 +1109,6 @@
                 };
                 textarea.addEventListener('blur', saveNote);
                 textarea.addEventListener('keypress', e => { if(e.key === 'Enter') textarea.blur(); });
-                // 删除备注按钮
                 const delNoteBtn = document.createElement('button');
                 delNoteBtn.innerHTML = '🗑️';
                 delNoteBtn.className = 'delete-note-icon';
