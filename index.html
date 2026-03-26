@@ -6,6 +6,7 @@
     <title>My Clippings - 看见我的阅读足迹</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
     <style>
+        /* 所有样式与上一版本保持一致，仅修改 .details-header 的 margin-top */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #faf3e8;
@@ -252,7 +253,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 2rem;  /* 加大返回按钮与书名间距，原为0，现为2rem，相当于原间距3倍 */
+            margin-top: 1.3rem;  /* 调整为原间距的2倍 (原约0.6rem) */
             margin-bottom: 1.8rem;
             padding-bottom: 0.8rem;
             border-bottom: 1px solid #e8ddce;
@@ -1027,6 +1028,7 @@
         autoResizeTextarea(ta);
         ta.addEventListener('input',function(){ autoResizeTextarea(this); });
         ta.focus();
+        // 保存函数（用于 blur）
         const saveOnBlur=()=>{
             const newText=ta.value.trim();
             if(newText && book.items[idx]) book.items[idx].highlight=newText;
@@ -1036,11 +1038,12 @@
             isEditMode=false;
             renderDetailsView(book,false);
         };
-        ta.addEventListener('blur',saveOnBlur);
+        // 绑定删除按钮，并临时解除 blur 事件避免冲突
         const delBtn=noteCard.querySelector('.delete-icon');
         delBtn.addEventListener('click',(e)=>{
             e.stopPropagation();
-            // 弹出确认框
+            // 临时移除 blur 监听，避免保存
+            ta.removeEventListener('blur', saveOnBlur);
             showConfirm('确定要删除这条标注及其所有备注吗？', () => {
                 book.items.splice(idx,1);
                 const idx2=groupsData.findIndex(g=>g.bookKey===book.bookKey);
@@ -1050,6 +1053,7 @@
                 renderDetailsView(book,false);
             });
         });
+        ta.addEventListener('blur', saveOnBlur);
         // 绑定每个备注的点击编辑
         noteCard.querySelectorAll('.note-text').forEach(noteDiv => {
             noteDiv.addEventListener('click', (e) => {
@@ -1101,7 +1105,6 @@
             const metaHtml=`<div class="note-meta">${item.location?`📍 位置 ${escapeHtml(item.location)}`:''}${item.date?` · 📅 ${escapeHtml(item.date)}`:''}</div>`;
             itemsHtml+=`<div class="note-card" data-item-index="${idx}" ${batchMode?`style="cursor:pointer;"`:''}>${batchMode?`<div class="checkbox" style="position:absolute; left:-1.2rem;">&nbsp;</div>`:''}<div class="highlight-text" data-index="${idx}">${escapeHtml(item.highlight)}</div><div class="notes-container">${notesHtml}</div>${metaHtml}</div>`;
         }
-        // 即使 items 为空，也显示书籍信息，不显示“暂无标注”但保留书籍卡片
         const batchBar = batchMode ? `<div class="batch-bar"><button id="batchDeleteBtn" class="primary">删除选中项</button><button id="exitBatchBtn" class="edit-btn">退出批量编辑</button></div>` : '';
         detailsViewDiv.innerHTML = `<button class="back-button" id="backToBooksBtn">← 返回书籍列表</button><div class="details-header"><div class="title-author"><h2>${escapeHtml(bookTitle)}</h2><div class="author">${escapeHtml(bookAuthor)}</div><div class="read-date">阅读时间 ${escapeHtml(displayDate)}</div></div><button id="batchModeBtn" class="batch-edit-btn" style="${batchMode?'display:none;':''}">📋 批量编辑</button></div><div id="itemsContainer">${itemsHtml || '<div class="empty-state">暂无标注</div>'}</div>${batchBar}</div>`;
         document.getElementById('backToBooksBtn').addEventListener('click',backToBooks);
