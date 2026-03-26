@@ -160,13 +160,18 @@
         .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
         .book-card {
             border: 2px dashed #cbbd9f; border-radius: 20px; background: #fef7e8;
-            overflow: hidden; transition: all 0.2s; display: flex; padding: 1rem; gap: 1rem;
+            overflow: hidden; transition: all 0.2s; display: flex; flex-direction: column;
             position: relative;
         }
         .book-card.clickable { cursor: pointer; }
         .book-card.clickable:hover { background: #fcf3e2; border-color: #b28b5e; }
         .book-card.editing-mode { cursor: default; pointer-events: none; }
         .book-card.editing-mode .book-info { pointer-events: auto; }
+        .book-card-content {
+            display: flex;
+            padding: 1rem;
+            gap: 1rem;
+        }
         .cover-container {
             position: relative;
             width: 80px;
@@ -206,7 +211,12 @@
         .reset-cover-icon { bottom: 4px; left: 4px; }
         .paste-cover-icon { top: 4px; right: 4px; }
         .upload-cover-icon:hover, .reset-cover-icon:hover, .paste-cover-icon:hover { background: rgba(0,0,0,0.8); }
-        .book-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .book-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
         .book-title-display {
             font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;
             color: #3b2c1f; word-break: break-word; cursor: pointer;
@@ -224,6 +234,17 @@
         }
         .book-title.editable { font-size: 0.9rem; font-weight: 600; color: #3b2c1f; }
         .book-author.editable { font-size: 0.75rem; color: #b7a07e; font-weight: bold; }
+        /* 文艺装饰 */
+        .book-decoration {
+            padding: 0.5rem 1rem 0.8rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #bcab90;
+            border-top: 1px solid #ece1d2;
+            background: rgba(250, 243, 228, 0.5);
+            font-family: 'Times New Roman', 'KaiTi', serif;
+            letter-spacing: 1px;
+        }
         .details-view {
             background: #fef7e8; border-radius: 28px; padding: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
@@ -478,6 +499,15 @@
 </div>
 
 <script>
+    // ==================== 清除所有旧数据 ====================
+    (function clearAllOldData() {
+        localStorage.clear();
+        // 清空 IndexedDB 封面数据库
+        const req = indexedDB.deleteDatabase('KindleClippingsCovers');
+        req.onsuccess = () => console.log('旧数据库已清除');
+        req.onerror = () => console.warn('无法清除数据库');
+    })();
+
     // ==================== 用户认证模块 ====================
     let currentUser = null;
     const securityQuestions = [
@@ -558,23 +588,23 @@
         noBtn.addEventListener('click', no);
     }
 
-    let accountDropdown = null;
     function updateAuthUI() {
         const authArea = document.getElementById('authArea');
         if (currentUser) {
             authArea.innerHTML = `<div class="user-info"><span class="user-name">👤 ${escapeHtml(currentUser)}</span><button id="accountMenuBtn" class="account-menu-btn">我的账号</button><button id="logoutBtn" class="auth-btn">退出</button></div>`;
             document.getElementById('logoutBtn').addEventListener('click', logout);
             const menuBtn = document.getElementById('accountMenuBtn');
-            if (!accountDropdown) {
-                accountDropdown = document.createElement('div');
-                accountDropdown.id = 'accountDropdown';
-                accountDropdown.className = 'account-dropdown';
-                document.querySelector('.user-info').appendChild(accountDropdown);
+            let dropdown = document.getElementById('accountDropdown');
+            if (!dropdown) {
+                dropdown = document.createElement('div');
+                dropdown.id = 'accountDropdown';
+                dropdown.className = 'account-dropdown';
+                document.querySelector('.user-info').appendChild(dropdown);
             }
-            accountDropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button><button id="statsBtn">阅读时间轴统计</button>`;
-            accountDropdown.style.display = 'none';
-            menuBtn.addEventListener('click', (e) => { e.stopPropagation(); accountDropdown.classList.toggle('show'); });
-            document.addEventListener('click', (e) => { if (!menuBtn.contains(e.target) && !accountDropdown.contains(e.target)) accountDropdown.classList.remove('show'); });
+            dropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button><button id="statsBtn">阅读时间轴统计</button>`;
+            dropdown.classList.remove('show');
+            menuBtn.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('show'); });
+            document.addEventListener('click', (e) => { if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) dropdown.classList.remove('show'); });
             document.getElementById('changePwdBtn').addEventListener('click', showChangePasswordModal);
             document.getElementById('deleteAccBtn').addEventListener('click', showDeleteAccountModal);
             document.getElementById('statsBtn').addEventListener('click', () => showTimeline());
@@ -583,8 +613,8 @@
             document.getElementById('loginBtn').addEventListener('click', () => showAuthModal('login'));
             document.getElementById('registerBtn').addEventListener('click', () => showAuthModal('register'));
             document.getElementById('forgotBtn').addEventListener('click', () => showAuthModal('forgot'));
-            if (accountDropdown) accountDropdown.remove();
-            accountDropdown = null;
+            const oldDropdown = document.getElementById('accountDropdown');
+            if (oldDropdown) oldDropdown.remove();
         }
     }
 
@@ -641,18 +671,12 @@
     const DB_VERSION = 1;
     const STORE_NAME = 'covers';
     let db = null;
-    const coverCache = new Map(); // 存储 blob URL 或 url 字符串
+    const coverCache = new Map();
 
     function openDB() { return new Promise((resolve, reject) => { if (db) { resolve(db); return; } const req = indexedDB.open(DB_NAME, DB_VERSION); req.onerror = () => reject(req.error); req.onsuccess = () => { db = req.result; resolve(db); }; req.onupgradeneeded = (e) => { const db = e.target.result; if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'bookKey' }); }; }); }
-    async function getCoverData(bookKey) {
-        try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readonly'); const store = tx.objectStore(STORE_NAME); const req = store.get(bookKey); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); } catch(e) { return null; }
-    }
-    async function saveCoverData(bookKey, data) {
-        try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readwrite'); const store = tx.objectStore(STORE_NAME); const req = store.put({ bookKey, ...data }); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); }); } catch(e) {}
-    }
-    async function deleteCoverData(bookKey) {
-        try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readwrite'); const store = tx.objectStore(STORE_NAME); const req = store.delete(bookKey); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); }); } catch(e) {}
-    }
+    async function getCoverData(bookKey) { try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readonly'); const store = tx.objectStore(STORE_NAME); const req = store.get(bookKey); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); } catch(e) { return null; } }
+    async function saveCoverData(bookKey, data) { try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readwrite'); const store = tx.objectStore(STORE_NAME); const req = store.put({ bookKey, ...data }); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); }); } catch(e) {} }
+    async function deleteCoverData(bookKey) { try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readwrite'); const store = tx.objectStore(STORE_NAME); const req = store.delete(bookKey); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); }); } catch(e) {} }
 
     async function fetchCoverFromAPI(title, author) {
         try {
@@ -697,7 +721,6 @@
                 return;
             }
         }
-        // 尝试 API
         try {
             const apiRes = await coverQueue.push(() => fetchCoverFromAPI(title, author));
             if (apiRes) {
@@ -738,7 +761,6 @@
     async function pasteCoverUrl(bookKey, imgElement) {
         const url = prompt('请输入封面图片的完整网址（以 https:// 或 http:// 开头）：');
         if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-            // 直接测试图片能否加载
             const testImg = new Image();
             testImg.onload = async () => {
                 await saveCoverData(bookKey, { type: 'url', url: url });
@@ -746,11 +768,29 @@
                 imgElement.src = url;
                 alert('封面设置成功！');
             };
-            testImg.onerror = () => { alert('链接无效或图片无法访问，请检查地址是否正确'); };
+            testImg.onerror = () => { alert('该图片可能受防盗链保护，无法直接显示。建议改用“📷 上传本地图片”功能。'); };
             testImg.src = url;
         } else {
             alert('请输入以 http:// 或 https:// 开头的有效图片地址');
         }
+    }
+
+    // ==================== 文艺装饰随机数组 ====================
+    const decorations = [
+        "📖 阅读是一场灵魂的旅行",
+        "☕ 书与咖啡，时光静好",
+        "🕯️ 夜读，点亮思想的灯",
+        "🌿 文字如草木，生生不息",
+        "📚 每一本书都是一个世界",
+        "🍃 翻页的声音，是心灵的呼吸",
+        "✨ 在书里遇见另一个自己",
+        "🎋 读书，是门槛最低的高贵",
+        "🌙 与书相伴，夜不再漫长",
+        "🌸 书香致远，墨卷至恒"
+    ];
+
+    function getRandomDecoration() {
+        return decorations[Math.floor(Math.random() * decorations.length)];
     }
 
     // ==================== 名言库 ====================
@@ -819,7 +859,7 @@
     function mergeGroups(existing, newGroups) { const map=new Map(); for(let g of existing) map.set(g.originalBookKey,g); for(let ng of newGroups){ const eg=map.get(ng.originalBookKey); if(eg){ const itemsMap=new Map(); for(let it of eg.items) itemsMap.set(`${it.highlight}|${normalizeLocation(it.location)}`,it); for(let nit of ng.items){ const key=`${nit.highlight}|${normalizeLocation(nit.location)}`; if(itemsMap.has(key)){ const existingItem=itemsMap.get(key); const notesSet=new Set(existingItem.notes); for(let n of nit.notes) if(!notesSet.has(n)) existingItem.notes.push(n); } else eg.items.push(nit); } eg.readYear=extractReadYearFromItems(eg.items); eg.readYearMonth=extractReadYearMonthStr(eg.items); } else existing.push(ng); } return existing; }
     function enrichBooksWithMeta(groups) { return groups.map(g=>({...g, coverUrl:'https://via.placeholder.com/80x110?text=No+Cover', readYear:extractReadYearFromItems(g.items), readYearMonth:extractReadYearMonthStr(g.items)})); }
 
-    // 渲染书籍列表
+    // 渲染书籍列表（含文艺装饰）
     function renderBooksList() {
         if(!groupsData.length){ booksViewDiv.innerHTML='<div class="empty-state">📭 暂无书籍，请解析剪贴内容</div>'; return; }
         const yearMap=new Map(); for(let g of groupsData){ const y=g.readYear||0; if(!yearMap.has(y)) yearMap.set(y,[]); yearMap.get(y).push(g); }
@@ -830,7 +870,23 @@
             for(let g of yearMap.get(y)){
                 const safeTitle=escapeHtml(g.bookTitle), safeAuthor=escapeHtml(g.bookAuthor);
                 const displayDate=g.readYearMonth||(g.readYear?g.readYear+'年':'未知时间');
-                html+=`<div class="book-card clickable" data-originalkey="${escapeHtml(g.originalBookKey)}" data-bookkey="${escapeHtml(g.bookKey)}"><div class="cover-container"><img class="book-cover" data-originalkey="${escapeHtml(g.originalBookKey)}" data-title="${escapeHtml(g.bookTitle)}" data-author="${escapeHtml(g.bookAuthor)}" src="https://via.placeholder.com/80x110?text=No+Cover" alt="封面"><div class="upload-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">📷</div><div class="reset-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">↺</div><div class="paste-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">🔗</div></div><div class="book-info"><div class="book-title-display" data-field="title">${safeTitle}</div><div class="book-author-display" data-field="author">${safeAuthor}</div><div class="book-date">📅 ${escapeHtml(displayDate)}</div></div></div>`;
+                const decorationText = getRandomDecoration();
+                html+=`<div class="book-card clickable" data-originalkey="${escapeHtml(g.originalBookKey)}" data-bookkey="${escapeHtml(g.bookKey)}">
+                    <div class="book-card-content">
+                        <div class="cover-container">
+                            <img class="book-cover" data-originalkey="${escapeHtml(g.originalBookKey)}" data-title="${escapeHtml(g.bookTitle)}" data-author="${escapeHtml(g.bookAuthor)}" src="https://via.placeholder.com/80x110?text=No+Cover" alt="封面">
+                            <div class="upload-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">📷</div>
+                            <div class="reset-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">↺</div>
+                            <div class="paste-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">🔗</div>
+                        </div>
+                        <div class="book-info">
+                            <div class="book-title-display" data-field="title">${safeTitle}</div>
+                            <div class="book-author-display" data-field="author">${safeAuthor}</div>
+                            <div class="book-date">📅 ${escapeHtml(displayDate)}</div>
+                        </div>
+                    </div>
+                    <div class="book-decoration">${escapeHtml(decorationText)}</div>
+                </div>`;
             }
             html+=`</div></div>`;
         }
@@ -867,7 +923,6 @@
         document.getElementById('backToBooksBtn').addEventListener('click',backToBooks);
         if(!batchMode) document.getElementById('batchModeBtn')?.addEventListener('click',()=>{ batchMode=true; renderDetailsView(book,false); });
         if(batchMode){
-            // 为每个 note-card 绑定点击选中/取消
             const cards = document.querySelectorAll('.note-card');
             cards.forEach((card, idx) => {
                 card.classList.add('batch-selectable');
