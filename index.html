@@ -6,6 +6,7 @@
     <title>My Clippings - 看见我的阅读足迹</title>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
     <style>
+        /* 全部样式与之前稳定版本一致，此处省略以节省篇幅，但实际代码中包含所有样式 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background-color: #faf3e8;
@@ -344,7 +345,14 @@
             margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e8ddce;
         }
         .modal-header h3 { font-size: 1.2rem; font-weight: 500; }
-        .close-modal { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #b28b5e; }
+        /* 统一关闭按钮类名 */
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #b28b5e;
+        }
         .auth-form {
             display: flex; flex-direction: column; gap: 1rem;
         }
@@ -485,6 +493,20 @@
 </div>
 
 <script>
+    // 所有模态框关闭按钮统一使用事件委托
+    document.addEventListener('click', function(e) {
+        // 关闭按钮：点击 .close-modal
+        if (e.target.classList.contains('close-modal')) {
+            const modal = e.target.closest('.modal');
+            if (modal) modal.style.display = 'none';
+            e.preventDefault();
+        }
+        // 点击模态框背景（半透明遮罩）关闭
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+    });
+
     // ==================== 用户认证模块 ====================
     let currentUser = null;
     const securityQuestions = [
@@ -817,7 +839,7 @@
     function mergeGroups(existing, newGroups) { const map=new Map(); for(let g of existing) map.set(g.originalBookKey,g); for(let ng of newGroups){ const eg=map.get(ng.originalBookKey); if(eg){ const itemsMap=new Map(); for(let it of eg.items) itemsMap.set(`${it.highlight}|${normalizeLocation(it.location)}`,it); for(let nit of ng.items){ const key=`${nit.highlight}|${normalizeLocation(nit.location)}`; if(itemsMap.has(key)){ const existingItem=itemsMap.get(key); const notesSet=new Set(existingItem.notes); for(let n of nit.notes) if(!notesSet.has(n)) existingItem.notes.push(n); } else eg.items.push(nit); } eg.readYear=extractReadYearFromItems(eg.items); eg.readYearMonth=extractReadYearMonthStr(eg.items); } else existing.push(ng); } return existing; }
     function enrichBooksWithMeta(groups) { return groups.map(g=>({...g, coverUrl:'https://via.placeholder.com/80x110?text=No+Cover', readYear:extractReadYearFromItems(g.items), readYearMonth:extractReadYearMonthStr(g.items)})); }
 
-    // 渲染书籍列表（无装饰）
+    // 渲染书籍列表
     function renderBooksList() {
         if(!groupsData.length){ booksViewDiv.innerHTML='<div class="empty-state">📭 暂无书籍，请解析剪贴内容</div>'; return; }
         const yearMap=new Map(); for(let g of groupsData){ const y=g.readYear||0; if(!yearMap.has(y)) yearMap.set(y,[]); yearMap.get(y).push(g); }
