@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>My Clippings · 书籍视图与标注编辑</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Pacifico&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: #faf3e8;
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+            padding: 2rem 1rem;
+            color: #2c2418;
+        }
+        .app-container { max-width: 1200px; margin: 0 auto; position: relative; }
+        .toggle-panel-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            background: #e2d4c2;
+            border: none;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            z-index: 100;
+            transition: 0.2s;
+        }
+        .toggle-panel-btn:hover { background: #cbbd9f; }
+        .header { text-align: center; margin-bottom: 2rem; position: relative; margin-left: 3rem; }
+        .header h1 {
+            font-family: 'Ravie', 'Algerian', cursive;
+            font-weight: bold;
+            font-size: 2.4rem;
+            letter-spacing: 0.3rem;
+            color: #3b2c1f;
+            margin-bottom: 1.5rem;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-box {
+            flex: 1;
+            min-width: 220px;
+            position: relative;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .search-box input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border: 1px solid #ddd0bc;
+            border-radius: 40px;
+            background: white;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+        .undo-redo {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .undo-redo button {
+            background: #e2d4c2;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .undo-redo button.disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+        .back-search-btn, .timeline-btn, .mode-toggle-btn, .auth-btn, .account-menu-btn {
+            background: #e2d4c2;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #4a3a28;
+            cursor: pointer;
+        }
+        .back-search-btn:hover, .timeline-btn:hover, .mode-toggle-btn:hover, .auth-btn:hover, .account-menu-btn:hover {
+            background: #cbbd9f;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            position: relative;
+        }
+        .user-name { font-size: 0.9rem; color: #8b765a; }
+        .account-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #fef7e8;
+            border: 1px solid #e8ddce;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 200;
+            min-width: 160px;
+            display: none;
+            flex-direction: column;
+            padding: 0.5rem 0;
+        }
+        .account-dropdown button {
+            background: none;
+            border: none;
+            padding: 0.5rem 1rem;
+            text-align: left;
+            font-size: 0.85rem;
+            color: #4a3a28;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 0;
+        }
+        .account-dropdown button:hover { background: #f3ecdf; }
+        .account-dropdown.show { display: flex; }
+        .two-columns { display: flex; gap: 1.8rem; flex-wrap: wrap; }
+        .input-panel {
+            flex: 1.2; min-width: 280px; background: #fef8ed; border-radius: 20px;
+            padding: 1.2rem; border: 1px solid #e8ddce; height: fit-content;
+            transition: all 0.3s;
+        }
+        .input-panel.hidden { display: none; }
+        .output-panel { flex: 2; min-width: 320px; }
+        textarea {
+            width: 100%; height: 280px; padding: 1rem; border: 1px solid #ddd0bc;
+            border-radius: 20px; background: white; font-family: 'SF Mono', monospace;
+            font-size: 0.8rem; line-height: 1.5; resize: vertical;
+        }
+        .button-group { display: flex; gap: 0.8rem; margin: 1rem 0; flex-wrap: wrap; }
+        button {
+            background: #e2d4c2; border: none; padding: 0.5rem 1.2rem;
+            border-radius: 40px; font-size: 0.8rem; font-weight: 500;
+            color: #4a3a28; cursor: pointer; transition: 0.2s;
+        }
+        button.primary { background: #cbbd9f; }
+        button:hover { background: #bcaa8c; color: white; }
+        .year-group { margin-bottom: 2rem; }
+        .year-title {
+            font-size: 1.2rem; font-weight: 500; color: #8b765a;
+            margin-bottom: 1rem; padding-left: 0.5rem; border-left: 3px solid #cbbd9f;
+        }
+        .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.2rem; }
+        .book-card {
+            border: 2px dashed #cbbd9f; border-radius: 20px; background: #fef7e8;
+            overflow: hidden; transition: all 0.2s; display: flex; padding: 1rem; gap: 1rem;
+            position: relative;
+        }
+        .book-card.clickable { cursor: pointer; }
+        .book-card.clickable:hover { background: #fcf3e2; border-color: #b28b5e; }
+        .book-card.editing-mode { cursor: default; pointer-events: none; }
+        .book-card.editing-mode .book-info { pointer-events: auto; }
+        .cover-container {
+            position: relative;
+            width: 80px;
+            height: 110px;
+            flex-shrink: 0;
+        }
+        .book-cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #e2d9cc;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .cover-container:hover .upload-cover-icon,
+        .cover-container:hover .reset-cover-icon,
+        .cover-container:hover .paste-cover-icon {
+            opacity: 1;
+        }
+        .upload-cover-icon, .reset-cover-icon, .paste-cover-icon {
+            position: absolute;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        .upload-cover-icon { bottom: 4px; right: 4px; }
+        .reset-cover-icon { bottom: 4px; left: 4px; }
+        .paste-cover-icon { top: 4px; right: 4px; }
+        .upload-cover-icon:hover, .reset-cover-icon:hover, .paste-cover-icon:hover { background: rgba(0,0,0,0.8); }
+        .book-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .book-title-display {
+            font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem;
+            color: #3b2c1f; word-break: break-word; cursor: pointer;
+        }
+        .book-title-display:hover { background: rgba(210,180,140,0.2); border-radius: 6px; }
+        .book-author-display {
+            font-size: 0.8rem; color: #b7a07e; margin-bottom: 0.5rem;
+            cursor: pointer; font-weight: bold;
+        }
+        .book-author-display:hover { background: rgba(210,180,140,0.2); border-radius: 6px; }
+        .book-date { font-size: 0.85rem; color: #b7a07e; margin-top: 0.2rem; }
+        .book-title.editable, .book-author.editable {
+            background: #fff; border: 1px solid #cbbd9f; border-radius: 8px;
+            padding: 0.2rem 0.4rem; width: 100%; font-family: inherit;
+        }
+        .book-title.editable { font-size: 0.9rem; font-weight: 600; color: #3b2c1f; }
+        .book-author.editable { font-size: 0.75rem; color: #b7a07e; font-weight: bold; }
+        .details-view {
+            background: #fef7e8; border-radius: 28px; padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.8rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid #e8ddce;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .details-header .title-author {
+            flex: 1;
+        }
+        .details-header h2 {
+            font-size: 1.6rem;
+            font-weight: bold;
+            font-family: 'STFangsong', '华文仿宋', '华文楷书', serif;
+            margin-bottom: 0.3rem;
+        }
+        .details-header .author {
+            color: #8b765a;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
+        }
+        .details-header .read-date {
+            color: #8b765a;
+            font-size: 0.85rem;
+        }
+        .batch-edit-btn {
+            background: #e2d4c2;
+            border: none;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        .note-card {
+            margin-bottom: 1.8rem;
+            border-left: 3px solid #d4b98c;
+            padding-left: 1.2rem;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .note-card.batch-selectable {
+            cursor: pointer;
+        }
+        .note-card.batch-selectable.selected {
+            background: rgba(210, 180, 140, 0.2);
+            border-radius: 8px;
+        }
+        .highlight-text {
+            font-family: 'Times New Roman', 'SimSun', '宋体', serif;
+            font-weight: bold;
+            font-size: 1.3rem;
+            line-height: 1.6;
+            color: #3b2a1e;
+            margin-bottom: 0.3rem;
+            cursor: pointer;
+            padding: 0.2rem 0;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .highlight-text:hover { background: rgba(210,180,140,0.2); }
+        .note-text {
+            background: #faf3e4; padding: 0.6rem 1rem; border-radius: 14px;
+            font-size: 0.95rem; color: #5a4732; margin: 0.6rem 0;
+            border-left: 2px solid #e2cfb0;
+        }
+        .note-text::before { content: "✍️ 笔记 "; font-size: 0.75rem; color: #bc9a6c; font-weight: 500; }
+        .note-meta {
+            font-size: 0.95rem; color: #8b765a; margin-top: 0.2rem; font-family: monospace;
+        }
+        .edit-highlight-textarea {
+            width: 100%; background: #fff; border: 1px solid #cbbd9f;
+            border-radius: 12px; padding: 0.6rem;
+            font-family: 'Times New Roman', 'SimSun', '宋体', serif;
+            font-weight: bold; font-size: 1rem; line-height: 1.5; resize: none;
+            margin-bottom: 0.5rem;
+        }
+        .delete-icon {
+            cursor: pointer; color: #c25d3a; font-size: 1.1rem;
+            background: none; border: none; padding: 0 6px;
+        }
+        .empty-state { text-align: center; padding: 3rem; color: #bcab90; }
+        footer {
+            text-align: center; margin-top: 2rem; color: #bcab90; font-style: italic;
+        }
+        .random-quote {
+            font-family: 'STXinwei', '华文新魏', serif;
+            font-size: 0.95rem; color: #b7a07e; text-align: center; margin-top: 1rem;
+        }
+        #footerQuote {
+            font-family: 'STXinwei', '华文新魏', serif;
+            font-size: 1.2rem; color: #b7a07e; text-align: center; margin-top: 2rem;
+        }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #fef7e8; border-radius: 28px; max-width: 400px; width: 90%;
+            max-height: 80vh; overflow-y: auto; padding: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e8ddce;
+        }
+        .modal-header h3 { font-size: 1.2rem; font-weight: 500; }
+        .close-modal { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #b28b5e; }
+        .auth-form {
+            display: flex; flex-direction: column; gap: 1rem;
+        }
+        .auth-form input, .auth-form select {
+            padding: 0.6rem; border: 1px solid #ddd0bc; border-radius: 40px; font-size: 0.9rem;
+        }
+        .auth-form button { align-self: center; }
+        .error-msg { color: #c25d3a; font-size: 0.8rem; text-align: center; }
+        .confirm-modal .modal-content { max-width: 300px; text-align: center; }
+        .confirm-buttons { display: flex; gap: 1rem; justify-content: center; margin-top: 1rem; }
+        .confirm-buttons button { padding: 0.3rem 1rem; }
+        .batch-bar {
+            margin-top: 1.5rem;
+            text-align: center;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .timeline-item {
+            margin-bottom: 1.2rem; padding: 0.8rem; background: #faf3e4;
+            border-radius: 16px; border-left: 3px solid #cbbd9f;
+        }
+        .timeline-year { font-weight: 600; color: #8b765a; margin-bottom: 0.5rem; }
+        .timeline-books { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .timeline-book {
+            background: #e8ddce; padding: 0.3rem 0.8rem; border-radius: 20px;
+            font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+        }
+        .timeline-book:hover { background: #d4b98c; }
+        .timeline-year-item {
+            margin-bottom: 0.5rem; border-left: 2px solid #cbbd9f; padding-left: 1rem;
+        }
+        .timeline-year-header {
+            font-weight: 600; font-size: 1.1rem; color: #8b765a;
+            cursor: pointer; padding: 0.3rem 0; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .timeline-year-header:hover { background: #faf3e4; }
+        .timeline-year-header .toggle-icon { font-size: 0.8rem; transition: transform 0.2s; }
+        .timeline-year-header .toggle-icon.open { transform: rotate(90deg); }
+        .timeline-months { margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.8rem; display: none; }
+        .timeline-months.open { display: block; }
+        .timeline-month { margin-bottom: 0.8rem; }
+        .timeline-month-title { font-weight: 500; color: #a58e6e; margin-bottom: 0.3rem; }
+        .timeline-month-books { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-left: 1rem; }
+        .timeline-book-item {
+            background: #e8ddce; padding: 0.2rem 0.8rem; border-radius: 20px;
+            font-size: 0.8rem; cursor: pointer; white-space: nowrap;
+        }
+        .timeline-book-item:hover { background: #d4b98c; }
+        .search-results {
+            background: #fef7e8; border-radius: 20px; padding: 1rem;
+            margin-bottom: 1rem; max-height: 400px; overflow-y: auto;
+        }
+        .search-result-item {
+            padding: 0.8rem; border-bottom: 1px solid #e8ddce; cursor: pointer;
+        }
+        .search-result-item:hover { background: #faf3e4; }
+        .result-book { font-weight: 600; color: #8b765a; font-size: 0.8rem; }
+        .result-highlight { margin: 0.3rem 0; color: #3b2a1e; font-family: 'Times New Roman', 'SimSun', '宋体', serif; font-weight: bold; font-size: 1rem; }
+        .result-highlight mark { background: #ffe6b3; }
+        .result-meta { font-size: 0.7rem; color: #b7a07e; }
+        .search-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .mode-toggle-btn.active { background: #cbbd9f; color: white; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <button class="toggle-panel-btn" id="togglePanelBtn">☰</button>
+    <div class="header">
+        <h1>📖 My Clippings</h1>
+        <div class="toolbar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 搜索标注内容...">
+                <button id="backFromSearchBtn" class="back-search-btn" style="display: none;">← 返回</button>
+            </div>
+            <div class="undo-redo">
+                <button id="undoBtn" class="undo-btn" title="撤销">↩️</button>
+                <button id="redoBtn" class="redo-btn disabled" title="重做" disabled>↪️</button>
+            </div>
+            <button id="timelineBtn" class="timeline-btn">📅 阅读时间线</button>
+            <div id="authArea"></div>
+        </div>
+    </div>
+
+    <div class="two-columns">
+        <div class="input-panel" id="inputPanel">
+            <textarea id="clippingsInput" placeholder="粘贴 Kindle My Clippings.txt 的内容..."></textarea>
+            <div class="button-group">
+                <button id="parseBtn" class="primary">✨ 增量导入 & 合并去重</button>
+                <button id="loadExampleBtn">📖 加载示例</button>
+                <button id="clearAllBtn">🗑️ 清空所有分组</button>
+            </div>
+            <div id="randomQuotePanel" class="random-quote"></div>
+        </div>
+
+        <div class="output-panel">
+            <div id="booksView" class="books-view">
+                <div class="empty-state">✨ 暂无书籍，粘贴剪贴内容后点击「增量导入 & 合并去重」</div>
+            </div>
+            <div id="searchResultsView" class="search-results" style="display: none;"></div>
+            <div id="detailsView" class="details-view" style="display: none;"></div>
+        </div>
+    </div>
+    <footer id="footerQuote"></footer>
+</div>
+
+<div id="timelineModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📅 阅读时间线</h3>
+            <div>
+                <button id="modeToggleBtn" class="mode-toggle-btn">📅 年份分组</button>
+                <button class="close-modal" id="closeModalBtn">✕</button>
+            </div>
+        </div>
+        <div id="timelineContent"></div>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal confirm-modal">
+    <div class="modal-content">
+        <p id="confirmMessage"></p>
+        <div class="confirm-buttons">
+            <button id="confirmYes">确定</button>
+            <button id="confirmNo">取消</button>
+        </div>
+    </div>
+</div>
+
+<div id="authModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="authModalTitle">登录</h3>
+            <button class="close-modal" id="closeAuthModalBtn">✕</button>
+        </div>
+        <div id="authFormContainer"></div>
+    </div>
+</div>
+
+<script>
+    // ==================== 用户认证模块 ====================
+    let currentUser = null;
+    const securityQuestions = [
+        "您小学的校名是什么？",
+        "您母亲的姓名是什么？",
+        "您父亲的名字是什么？",
+        "您出生地的城市是哪里？",
+        "您的第一个宠物叫什么？"
+    ];
+
+    function getUsers() { const u = localStorage.getItem('clippings_users'); return u ? JSON.parse(u) : []; }
+    function saveUsers(users) { localStorage.setItem('clippings_users', JSON.stringify(users)); }
+    function register(username, password, confirm, question, answer) {
+        if (password !== confirm) return { success: false, message: '两次输入的密码不一致' };
+        const users = getUsers();
+        if (users.find(u => u.username === username)) return { success: false, message: '用户名已存在' };
+        users.push({ username, password, securityQuestion: question, securityAnswer: answer.trim().toLowerCase() });
+        saveUsers(users);
+        return { success: true };
+    }
+    function login(username, password) {
+        const users = getUsers();
+        const user = users.find(u => u.username === username && u.password === password);
+        if (user) { currentUser = username; localStorage.setItem('clippings_currentUser', currentUser); return { success: true }; }
+        return { success: false, message: '用户名或密码错误' };
+    }
+    function logout() {
+        currentUser = null;
+        localStorage.removeItem('clippings_currentUser');
+        groupsData = [];
+        renderBooksList();
+        saveUserData();
+        updateAuthUI();
+    }
+    function changePassword(username, oldPwd, newPwd) {
+        const users = getUsers();
+        const idx = users.findIndex(u => u.username === username && u.password === oldPwd);
+        if (idx === -1) return { success: false, message: '原密码错误' };
+        users[idx].password = newPwd;
+        saveUsers(users);
+        return { success: true };
+    }
+    function deleteAccount(username, pwd) {
+        const users = getUsers();
+        const idx = users.findIndex(u => u.username === username && u.password === pwd);
+        if (idx === -1) return { success: false, message: '密码错误' };
+        users.splice(idx, 1);
+        saveUsers(users);
+        if (currentUser === username) logout();
+        return { success: true };
+    }
+    function getUserSecurityQuestion(username) {
+        const users = getUsers();
+        const u = users.find(u => u.username === username);
+        return u ? u.securityQuestion : null;
+    }
+    function resetPassword(username, newPwd, answer) {
+        const users = getUsers();
+        const idx = users.findIndex(u => u.username === username);
+        if (idx === -1) return { success: false, message: '用户名不存在' };
+        const u = users[idx];
+        if (u.securityAnswer !== answer.trim().toLowerCase()) return { success: false, message: '安全问题答案错误' };
+        users[idx].password = newPwd;
+        saveUsers(users);
+        return { success: true };
+    }
+
+    function showConfirm(message, onConfirm) {
+        const modal = document.getElementById('confirmModal');
+        document.getElementById('confirmMessage').innerText = message;
+        modal.style.display = 'flex';
+        const yes = () => { modal.style.display = 'none'; onConfirm(); cleanup(); };
+        const no = () => { modal.style.display = 'none'; cleanup(); };
+        const cleanup = () => { yesBtn.removeEventListener('click', yes); noBtn.removeEventListener('click', no); };
+        const yesBtn = document.getElementById('confirmYes');
+        const noBtn = document.getElementById('confirmNo');
+        yesBtn.addEventListener('click', yes);
+        noBtn.addEventListener('click', no);
+    }
+
+    let accountDropdown = null;
+    function updateAuthUI() {
+        const authArea = document.getElementById('authArea');
+        if (currentUser) {
+            authArea.innerHTML = `<div class="user-info"><span class="user-name">👤 ${escapeHtml(currentUser)}</span><button id="accountMenuBtn" class="account-menu-btn">我的账号</button><button id="logoutBtn" class="auth-btn">退出</button></div>`;
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            const menuBtn = document.getElementById('accountMenuBtn');
+            if (!accountDropdown) {
+                accountDropdown = document.createElement('div');
+                accountDropdown.id = 'accountDropdown';
+                accountDropdown.className = 'account-dropdown';
+                document.querySelector('.user-info').appendChild(accountDropdown);
+            }
+            accountDropdown.innerHTML = `<button id="changePwdBtn">修改密码</button><button id="deleteAccBtn">删除账号</button><button id="statsBtn">阅读时间轴统计</button>`;
+            accountDropdown.style.display = 'none';
+            menuBtn.addEventListener('click', (e) => { e.stopPropagation(); accountDropdown.classList.toggle('show'); });
+            document.addEventListener('click', (e) => { if (!menuBtn.contains(e.target) && !accountDropdown.contains(e.target)) accountDropdown.classList.remove('show'); });
+            document.getElementById('changePwdBtn').addEventListener('click', showChangePasswordModal);
+            document.getElementById('deleteAccBtn').addEventListener('click', showDeleteAccountModal);
+            document.getElementById('statsBtn').addEventListener('click', () => showTimeline());
+        } else {
+            authArea.innerHTML = `<button id="loginBtn" class="auth-btn">登录</button><button id="registerBtn" class="auth-btn">注册</button><button id="forgotBtn" class="auth-btn">忘记密码</button>`;
+            document.getElementById('loginBtn').addEventListener('click', () => showAuthModal('login'));
+            document.getElementById('registerBtn').addEventListener('click', () => showAuthModal('register'));
+            document.getElementById('forgotBtn').addEventListener('click', () => showAuthModal('forgot'));
+            if (accountDropdown) accountDropdown.remove();
+            accountDropdown = null;
+        }
+    }
+
+    function showAuthModal(mode) {
+        const modal = document.getElementById('authModal');
+        const title = document.getElementById('authModalTitle');
+        const container = document.getElementById('authFormContainer');
+        let html = '';
+        if (mode === 'login') {
+            title.innerText = '登录';
+            html = `<div class="auth-form"><input type="text" id="authUsername" placeholder="用户名"><input type="password" id="authPassword" placeholder="密码"><button id="authSubmitBtn" class="primary">登录</button><div id="authError" class="error-msg"></div></div>`;
+        } else if (mode === 'register') {
+            title.innerText = '注册';
+            html = `<div class="auth-form"><input type="text" id="regUsername" placeholder="用户名"><input type="password" id="regPassword" placeholder="密码"><input type="password" id="regConfirmPassword" placeholder="确认密码"><select id="regSecurityQuestion">${securityQuestions.map(q => `<option value="${q}">${q}</option>`).join('')}</select><input type="text" id="regSecurityAnswer" placeholder="答案"><button id="authSubmitBtn" class="primary">注册</button><div id="authError" class="error-msg"></div></div>`;
+        } else if (mode === 'forgot') {
+            title.innerText = '找回密码';
+            html = `<div class="auth-form"><input type="text" id="forgotUsername" placeholder="用户名"><button id="getQuestionBtn" class="primary">获取安全问题</button><div id="securityQuestionDisplay" style="display:none;"></div><input type="text" id="securityAnswer" placeholder="答案" style="display:none;"><input type="password" id="newPassword" placeholder="新密码" style="display:none;"><input type="password" id="confirmNewPassword" placeholder="确认新密码" style="display:none;"><button id="resetPasswordBtn" class="primary" style="display:none;">重置密码</button><div id="authError" class="error-msg"></div></div>`;
+        }
+        container.innerHTML = html;
+        modal.style.display = 'flex';
+        if (mode === 'login') {
+            const submit = () => { const u = document.getElementById('authUsername').value.trim(); const p = document.getElementById('authPassword').value; if (!u || !p) { document.getElementById('authError').innerText = '请填写用户名和密码'; return; } const res = login(u, p); if (res.success) { modal.style.display = 'none'; loadUserData(); updateAuthUI(); } else document.getElementById('authError').innerText = res.message; };
+            document.getElementById('authSubmitBtn').addEventListener('click', submit);
+            document.getElementById('authPassword').addEventListener('keypress', e => { if (e.key === 'Enter') submit(); });
+        } else if (mode === 'register') {
+            const submit = () => { const u = document.getElementById('regUsername').value.trim(); const p = document.getElementById('regPassword').value; const c = document.getElementById('regConfirmPassword').value; const q = document.getElementById('regSecurityQuestion').value; const a = document.getElementById('regSecurityAnswer').value.trim(); if (!u || !p || !c || !a) { document.getElementById('authError').innerText = '请填写所有字段'; return; } const res = register(u, p, c, q, a); if (res.success) { login(u, p); modal.style.display = 'none'; loadUserData(); updateAuthUI(); } else document.getElementById('authError').innerText = res.message; };
+            document.getElementById('authSubmitBtn').addEventListener('click', submit);
+        } else if (mode === 'forgot') {
+            document.getElementById('getQuestionBtn').addEventListener('click', () => { const u = document.getElementById('forgotUsername').value.trim(); if (!u) { document.getElementById('authError').innerText = '请输入用户名'; return; } const q = getUserSecurityQuestion(u); if (q) { document.getElementById('securityQuestionDisplay').innerText = `安全问题：${q}`; document.getElementById('securityQuestionDisplay').style.display = 'block'; document.getElementById('securityAnswer').style.display = 'block'; document.getElementById('newPassword').style.display = 'block'; document.getElementById('confirmNewPassword').style.display = 'block'; document.getElementById('resetPasswordBtn').style.display = 'block'; document.getElementById('authError').innerText = ''; } else document.getElementById('authError').innerText = '用户名不存在或未设置安全问题'; });
+            document.getElementById('resetPasswordBtn').addEventListener('click', () => { const u = document.getElementById('forgotUsername').value.trim(); const a = document.getElementById('securityAnswer').value.trim(); const np = document.getElementById('newPassword').value; const cp = document.getElementById('confirmNewPassword').value; if (!u || !a || !np || !cp) { document.getElementById('authError').innerText = '请填写所有字段'; return; } if (np !== cp) { document.getElementById('authError').innerText = '两次输入的新密码不一致'; return; } const res = resetPassword(u, np, a); if (res.success) { alert('密码已重置，请使用新密码登录'); modal.style.display = 'none'; } else document.getElementById('authError').innerText = res.message; });
+        }
+    }
+    function showChangePasswordModal() {
+        const modal = document.getElementById('authModal');
+        const title = document.getElementById('authModalTitle');
+        const container = document.getElementById('authFormContainer');
+        title.innerText = '修改密码';
+        container.innerHTML = `<div class="auth-form"><input type="password" id="oldPwd" placeholder="原密码"><input type="password" id="newPwd" placeholder="新密码"><input type="password" id="confirmNewPwd" placeholder="确认新密码"><button id="changePwdSubmit" class="primary">确认修改</button><div id="authError" class="error-msg"></div></div>`;
+        modal.style.display = 'flex';
+        document.getElementById('changePwdSubmit').addEventListener('click', () => { const old = document.getElementById('oldPwd').value; const np = document.getElementById('newPwd').value; const cp = document.getElementById('confirmNewPwd').value; if (!old || !np || !cp) { document.getElementById('authError').innerText = '请填写所有字段'; return; } if (np !== cp) { document.getElementById('authError').innerText = '两次输入的新密码不一致'; return; } const res = changePassword(currentUser, old, np); if (res.success) { alert('密码已修改，请重新登录'); logout(); modal.style.display = 'none'; } else document.getElementById('authError').innerText = res.message; });
+    }
+    function showDeleteAccountModal() {
+        const modal = document.getElementById('authModal');
+        const title = document.getElementById('authModalTitle');
+        const container = document.getElementById('authFormContainer');
+        title.innerText = '删除账号';
+        container.innerHTML = `<div class="auth-form"><input type="password" id="delPwd" placeholder="输入密码确认删除"><button id="delAccountSubmit" class="primary">永久删除账号</button><div id="authError" class="error-msg"></div></div>`;
+        modal.style.display = 'flex';
+        document.getElementById('delAccountSubmit').addEventListener('click', () => { const p = document.getElementById('delPwd').value; if (!p) { document.getElementById('authError').innerText = '请输入密码'; return; } const res = deleteAccount(currentUser, p); if (res.success) { alert('账号已删除'); modal.style.display = 'none'; } else document.getElementById('authError').innerText = res.message; });
+    }
+
+    // ==================== 封面存储与加载 ====================
+    const DB_NAME = 'KindleClippingsCovers';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'covers';
+    let db = null;
+    const coverCache = new Map(); // 存储 blob URL 或 url 字符串
+
+    function openDB() { return new Promise((resolve, reject) => { if (db) { resolve(db); return; } const req = indexedDB.open(DB_NAME, DB_VERSION); req.onerror = () => reject(req.error); req.onsuccess = () => { db = req.result; resolve(db); }; req.onupgradeneeded = (e) => { const db = e.target.result; if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME, { keyPath: 'bookKey' }); }; }); }
+    async function getCoverData(bookKey) {
+        try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readonly'); const store = tx.objectStore(STORE_NAME); const req = store.get(bookKey); req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); } catch(e) { return null; }
+    }
+    async function saveCoverData(bookKey, data) {
+        try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readwrite'); const store = tx.objectStore(STORE_NAME); const req = store.put({ bookKey, ...data }); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); }); } catch(e) {}
+    }
+    async function deleteCoverData(bookKey) {
+        try { const db = await openDB(); return new Promise((resolve, reject) => { const tx = db.transaction(STORE_NAME, 'readwrite'); const store = tx.objectStore(STORE_NAME); const req = store.delete(bookKey); req.onsuccess = () => resolve(); req.onerror = () => reject(req.error); }); } catch(e) {}
+    }
+
+    async function fetchCoverFromAPI(title, author) {
+        try {
+            const url = `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}+inauthor:${encodeURIComponent(author)}&maxResults=1`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.items?.[0]?.volumeInfo?.imageLinks?.thumbnail) {
+                const imgUrl = data.items[0].volumeInfo.imageLinks.thumbnail.replace('http:', 'https:');
+                return { type: 'url', value: imgUrl };
+            }
+        } catch(e) {}
+        try {
+            const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}&limit=1`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.docs?.[0]?.cover_i) {
+                const imgUrl = `https://covers.openlibrary.org/b/id/${data.docs[0].cover_i}-M.jpg`;
+                return { type: 'url', value: imgUrl };
+            }
+        } catch(e) {}
+        return null;
+    }
+
+    class Queue { constructor(c) { this.c = c; this.r = 0; this.q = []; } push(t) { return new Promise((res,rej)=>{ this.q.push({t,res,rej}); this.next(); }); } next() { if (this.r >= this.c || !this.q.length) return; const {t,res,rej} = this.q.shift(); this.r++; t().then(res,rej).finally(()=>{ this.r--; this.next(); }); } }
+    const coverQueue = new Queue(3);
+
+    async function loadCoverForBook(bookKey, title, author, imgElement) {
+        if (coverCache.has(bookKey)) {
+            imgElement.src = coverCache.get(bookKey);
+            return;
+        }
+        const saved = await getCoverData(bookKey);
+        if (saved) {
+            if (saved.type === 'blob' && saved.blob) {
+                const url = URL.createObjectURL(saved.blob);
+                coverCache.set(bookKey, url);
+                imgElement.src = url;
+                return;
+            } else if (saved.type === 'url' && saved.url) {
+                coverCache.set(bookKey, saved.url);
+                imgElement.src = saved.url;
+                return;
+            }
+        }
+        // 尝试 API
+        try {
+            const apiRes = await coverQueue.push(() => fetchCoverFromAPI(title, author));
+            if (apiRes) {
+                await saveCoverData(bookKey, { type: apiRes.type, url: apiRes.value });
+                coverCache.set(bookKey, apiRes.value);
+                imgElement.src = apiRes.value;
+                return;
+            }
+        } catch(e) {}
+        imgElement.src = 'https://via.placeholder.com/80x110?text=No+Cover';
+    }
+
+    async function uploadCover(bookKey, imgElement) {
+        return new Promise((resolve) => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/jpeg,image/png';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) { resolve(false); return; }
+                if (file.size > 2*1024*1024) { alert('图片大小不能超过 2MB'); resolve(false); return; }
+                await saveCoverData(bookKey, { type: 'blob', blob: file });
+                const url = URL.createObjectURL(file);
+                coverCache.set(bookKey, url);
+                imgElement.src = url;
+                resolve(true);
+            };
+            input.click();
+        });
+    }
+
+    async function resetCover(bookKey, title, author, imgElement) {
+        await deleteCoverData(bookKey);
+        coverCache.delete(bookKey);
+        await loadCoverForBook(bookKey, title, author, imgElement);
+    }
+
+    async function pasteCoverUrl(bookKey, imgElement) {
+        const url = prompt('请输入封面图片的完整网址（以 https:// 或 http:// 开头）：');
+        if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            // 直接测试图片能否加载
+            const testImg = new Image();
+            testImg.onload = async () => {
+                await saveCoverData(bookKey, { type: 'url', url: url });
+                coverCache.set(bookKey, url);
+                imgElement.src = url;
+                alert('封面设置成功！');
+            };
+            testImg.onerror = () => { alert('链接无效或图片无法访问，请检查地址是否正确'); };
+            testImg.src = url;
+        } else {
+            alert('请输入以 http:// 或 https:// 开头的有效图片地址');
+        }
+    }
+
+    // ==================== 名言库 ====================
+    const allQuotes = [
+        { text: "文字让人死亡，精神让人活着", author: "奥古斯汀" },
+        { text: "但书籍是另外一回事：书籍是记忆和想象的延伸", author: "博尔赫斯" },
+        { text: "花朵和书籍，是抚慰悲伤的良药", author: "艾米莉·狄金森" },
+        { text: "如何穿梭时间：阅读", author: "马特·海格" },
+        { text: "我们要继续梦想、阅读和写作，这是我们能找到的抚慰短暂人生", author: "略萨" },
+        { text: "击溃时间侵蚀，变不可能为可能的最有效的方式", author: "略萨" },
+        { text: "阅读，就是我的处方", author: "弗吉尼亚·伍尔夫" },
+        { text: "会一直读书，一直痛苦，一直爱着从痛苦荒芜里生出来的喜悦", author: "阿尔贝·加缪" },
+        { text: "世间的一切苦难，似乎都能在书中找到救赎", author: "贝蒂·史密斯" },
+        { text: "世界上任何书籍都不能带给你好运，但它们能让你悄悄成为你自己", author: "赫尔曼·黑塞" },
+        { text: "只要我还一直读书，我就能够一直理解自己的痛苦", author: "阿尔贝·加缪" },
+        { text: "你阅读着那些文字，然后你就被穿透了", author: "奥尔德斯·赫胥黎" }
+    ];
+    let currentFooterQuoteIndex = -1, currentPanelQuoteIndex = -1;
+    function getRandomQuote(excludeIndex) { let avail = allQuotes.map((_,i)=>i).filter(i=>i!==excludeIndex); if(!avail.length) avail=allQuotes.map((_,i)=>i); const idx = avail[Math.floor(Math.random()*avail.length)]; return { index: idx, quote: allQuotes[idx] }; }
+    function setRandomQuotes() { const f = getRandomQuote(-1); currentFooterQuoteIndex = f.index; document.getElementById('footerQuote').innerHTML = `“${f.quote.text}” — ${f.quote.author}`; const p = getRandomQuote(currentFooterQuoteIndex); currentPanelQuoteIndex = p.index; document.getElementById('randomQuotePanel').innerHTML = `💡 “${p.quote.text}” — ${p.quote.author}`; }
+    setRandomQuotes();
+
+    // ==================== 历史记录 ====================
+    let historyStack = [], historyIndex = -1;
+    const MAX_HISTORY = 30;
+    function saveToHistory(data) { historyStack = historyStack.slice(0, historyIndex+1); historyStack.push(JSON.parse(JSON.stringify(data))); if(historyStack.length>MAX_HISTORY) historyStack.shift(); historyIndex = historyStack.length-1; updateUndoRedoButtons(); }
+    function undo() { if(historyIndex>0){ historyIndex--; groupsData = JSON.parse(JSON.stringify(historyStack[historyIndex])); renderBooksList(); updateUndoRedoButtons(); saveUserData(); } }
+    function redo() { if(historyIndex<historyStack.length-1){ historyIndex++; groupsData = JSON.parse(JSON.stringify(historyStack[historyIndex])); renderBooksList(); updateUndoRedoButtons(); saveUserData(); } }
+    function updateUndoRedoButtons() { const u=document.getElementById('undoBtn'), r=document.getElementById('redoBtn'); if(u){ u.disabled = historyIndex<=0; u.classList.toggle('disabled', historyIndex<=0); } if(r){ r.disabled = historyIndex>=historyStack.length-1; r.classList.toggle('disabled', historyIndex>=historyStack.length-1); } }
+
+    // ==================== 全局变量 ====================
+    let groupsData = [], currentView = 'books', currentBookKey = null, isEditMode = false, timelineMode = 'year';
+    const booksViewDiv = document.getElementById('booksView'), detailsViewDiv = document.getElementById('detailsView'), searchResultsView = document.getElementById('searchResultsView'), inputPanel = document.getElementById('inputPanel');
+    const searchInput = document.getElementById('searchInput'), backFromSearchBtn = document.getElementById('backFromSearchBtn'), togglePanelBtn = document.getElementById('togglePanelBtn');
+    let panelVisible = true;
+    togglePanelBtn.addEventListener('click', () => { panelVisible = !panelVisible; inputPanel.classList.toggle('hidden', !panelVisible); });
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[m])); }
+    function highlightText(text, keyword) { if (!keyword) return escapeHtml(text); const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'); return escapeHtml(text).replace(regex, '<mark>$1</mark>'); }
+
+    // 搜索
+    function backToBooksView() { searchInput.value = ''; searchResultsView.style.display = 'none'; booksViewDiv.style.display = 'block'; detailsViewDiv.style.display = 'none'; backFromSearchBtn.style.display = 'none'; currentView = 'books'; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
+    function searchAnnotations(keyword) { if(!keyword.trim()){ backToBooksView(); return []; } const res = []; for(let b of groupsData) for(let i of b.items) if(i.highlight.toLowerCase().includes(keyword.toLowerCase())) res.push({ bookKey: b.bookKey, bookTitle: b.bookTitle, highlight: i.highlight, location: i.location, date: i.date }); return res; }
+    function renderSearchResults(keyword) {
+        const res = searchAnnotations(keyword);
+        if(!res.length){ searchResultsView.innerHTML = `<div class="empty-state">🔍 未找到包含「${escapeHtml(keyword)}」的标注</div>`; searchResultsView.style.display='block'; booksViewDiv.style.display='none'; detailsViewDiv.style.display='none'; backFromSearchBtn.style.display='inline-block'; inputPanel.classList.add('hidden'); return; }
+        let html = `<div class="search-header"><span>找到 ${res.length} 条包含「${escapeHtml(keyword)}」的标注：</span></div>`;
+        for(let r of res) html += `<div class="search-result-item" data-bookkey="${escapeHtml(r.bookKey)}"><div class="result-book">📘 ${escapeHtml(r.bookTitle)}</div><div class="result-highlight">${highlightText(r.highlight, keyword)}</div><div class="result-meta">${r.location ? `📍 位置 ${escapeHtml(r.location)}` : ''}${r.date ? ` · 📅 ${escapeHtml(r.date)}` : ''}</div></div>`;
+        searchResultsView.innerHTML = html; searchResultsView.style.display='block'; booksViewDiv.style.display='none'; detailsViewDiv.style.display='none'; backFromSearchBtn.style.display='inline-block'; inputPanel.classList.add('hidden');
+        document.querySelectorAll('.search-result-item').forEach(el => el.addEventListener('click', () => { const bk = el.getAttribute('data-bookkey'); showDetailsView(bk); searchInput.value = ''; backFromSearchBtn.style.display='none'; searchResultsView.style.display='none'; }));
+    }
+    searchInput.addEventListener('input', e => { const kw = e.target.value.trim(); kw ? renderSearchResults(kw) : backToBooksView(); });
+    backFromSearchBtn.addEventListener('click', backToBooksView);
+
+    // 时间线
+    function renderYearGroupMode() { const container = document.getElementById('timelineContent'); const yearMap = new Map(); for(let b of groupsData) if(b.readYear){ if(!yearMap.has(b.readYear)) yearMap.set(b.readYear,[]); yearMap.get(b.readYear).push(b); } const years = Array.from(yearMap.keys()).sort((a,b)=>b-a); if(!years.length){ container.innerHTML='<div class="empty-state">暂无阅读记录</div>'; return; } let html=''; for(let y of years) html+=`<div class="timeline-item"><div class="timeline-year">📅 ${y}年 · 共${yearMap.get(y).length}本书</div><div class="timeline-books">${yearMap.get(y).map(b=>`<span class="timeline-book" data-bookkey="${escapeHtml(b.bookKey)}">${escapeHtml(b.bookTitle)}</span>`).join('')}</div></div>`; container.innerHTML=html; document.querySelectorAll('.timeline-book').forEach(el=>el.addEventListener('click',()=>{ document.getElementById('timelineModal').style.display='none'; showDetailsView(el.getAttribute('data-bookkey')); })); }
+    function renderTimelineMode() { const container = document.getElementById('timelineContent'); const yearMonthMap = new Map(); for(let b of groupsData){ if(b.readYear){ let month=0; if(b.readYearMonth){ const m=b.readYearMonth.match(/(\d{4})年(\d{1,2})月/); if(m) month=parseInt(m[2]); } if(!yearMonthMap.has(b.readYear)) yearMonthMap.set(b.readYear,new Map()); const mm=yearMonthMap.get(b.readYear); if(!mm.has(month)) mm.set(month,[]); mm.get(month).push(b); } } const years=Array.from(yearMonthMap.keys()).sort((a,b)=>b-a); if(!years.length){ container.innerHTML='<div class="empty-state">暂无阅读记录</div>'; return; } let html=''; for(let y of years){ const months=yearMonthMap.get(y); const sorted=Array.from(months.keys()).sort((a,b)=>b-a); html+=`<div class="timeline-year-item"><div class="timeline-year-header" data-year="${y}"><span class="toggle-icon">▶</span><span>📅 ${y}年</span></div><div class="timeline-months" data-year="${y}">`; for(let m of sorted){ const books=months.get(m); html+=`<div class="timeline-month"><div class="timeline-month-title">${m===0?'📖 阅读记录':m+'月'}</div><div class="timeline-month-books">${books.map(b=>`<span class="timeline-book-item" data-bookkey="${escapeHtml(b.bookKey)}">${escapeHtml(b.bookTitle)}</span>`).join('')}</div></div>`; } html+=`</div></div>`; } container.innerHTML=html; document.querySelectorAll('.timeline-year-header').forEach(h=>h.addEventListener('click',()=>{ const y=h.getAttribute('data-year'); const div=document.querySelector(`.timeline-months[data-year="${y}"]`); const icon=h.querySelector('.toggle-icon'); div.classList.toggle('open'); icon.classList.toggle('open'); icon.textContent=div.classList.contains('open')?'▼':'▶'; })); document.querySelectorAll('.timeline-book-item').forEach(el=>el.addEventListener('click',()=>{ document.getElementById('timelineModal').style.display='none'; showDetailsView(el.getAttribute('data-bookkey')); })); }
+    function showTimeline() { const modal = document.getElementById('timelineModal'); if(timelineMode==='year') renderYearGroupMode(); else renderTimelineMode(); modal.style.display='flex'; }
+
+    // 解析函数
+    function parseBookTitleLine(line) { let title=line.trim(), author=''; const last=line.match(/\(([^)]+)\)\s*$/); if(last){ author=last[1].trim(); title=line.slice(0,last.index).trim(); }else{ const first=line.match(/^(.+?)\s*\(([^)]+)\)/); if(first){ title=first[1].trim(); author=first[2].trim(); } } title=title.replace(/[()]/g,'').trim(); return {title,author}; }
+    function extractReadYearMonthFromItems(items) { let earliest=null; const re=/(\d{4})年(\d{1,2})月/; for(let i of items) if(i.date){ const m=i.date.match(re); if(m){ const val=parseInt(m[1])*12+parseInt(m[2]); if(!earliest||val<earliest.val) earliest={year:parseInt(m[1]), month:parseInt(m[2]), val}; } } return earliest; }
+    function extractReadYearFromItems(items) { const d=extractReadYearMonthFromItems(items); return d?d.year:null; }
+    function extractReadYearMonthStr(items) { const d=extractReadYearMonthFromItems(items); if(d) return `${d.year}年${d.month}月`; for(let i of items) if(i.date){ const ym=i.date.match(/(\d{4})年/); if(ym) return `${ym[1]}年`; } return null; }
+    function normalizeLocation(loc) { if(!loc) return ''; const m=loc.match(/#?([\d\-]+)/); return m?m[1]:loc; }
+    function parseClippings(text) { const lines=text.split(/\r?\n/); const entries=[]; let currentBook={title:'',author:''}; let i=0; while(i<lines.length){ let line=lines[i].trim(); if(!line){ i++; continue; } const isBook=!line.startsWith('-') && !line.includes('标注') && !line.includes('笔记') && !line.includes('书签') && !line.includes('Highlight') && !line.includes('Note') && line.length<100 && !line.includes('=========='); if(isBook){ const {title,author}=parseBookTitleLine(line); currentBook={title:title||line, author:author||''}; i++; continue; } if(line.startsWith('- ') && (line.includes('标注')||line.includes('笔记')||line.includes('书签')||line.includes('Highlight')||line.includes('Note'))){ let type='other'; if(line.includes('标注')||line.includes('Highlight')) type='highlight'; else if(line.includes('笔记')||line.includes('Note')) type='note'; else if(line.includes('书签')) type='bookmark'; let loc=''; const locM=line.match(/位置\s*([#\d\-]+)/); if(locM) loc=locM[1]; let date=''; const dateM=line.match(/添加于\s*(.+)$/); if(dateM) date=dateM[1].trim(); let content=''; let next=i+1; while(next<lines.length && !lines[next].trim()) next++; if(next<lines.length){ let cl=lines[next].trim(); if(cl!=='==========') content=cl; } if((type==='highlight'||type==='note') && content) entries.push({type, content, location:loc, date, bookTitle:currentBook.title, bookAuthor:currentBook.author}); i=next+1; continue; } if(line.includes('==========')){ i++; continue; } i++; } const paired=[]; for(let e of entries){ if(e.type==='highlight') paired.push({highlight:e.content, notes:[], location:e.location, date:e.date, bookTitle:e.bookTitle, bookAuthor:e.bookAuthor}); else if(e.type==='note'){ const normLoc=normalizeLocation(e.location); let found=false; for(let j=paired.length-1;j>=0;j--){ const p=paired[j]; if(p.bookTitle===e.bookTitle && normalizeLocation(p.location)===normLoc){ p.notes.push(e.content); found=true; break; } } if(!found) paired.push({highlight:'📌 独立笔记', notes:[e.content], location:e.location, date:e.date, bookTitle:e.bookTitle, bookAuthor:e.bookAuthor}); } } const groupsMap=new Map(); for(let item of paired){ const bt=item.bookTitle||'未命名书籍'; const ba=item.bookAuthor||''; const key=`${bt}|${ba}`; if(!groupsMap.has(key)) groupsMap.set(key,{ originalBookKey:key, bookKey:key, bookTitle:bt, bookAuthor:ba, items:[] }); groupsMap.get(key).items.push({ highlight:item.highlight, notes:item.notes, location:item.location, date:item.date }); } return Array.from(groupsMap.values()); }
+    function mergeGroups(existing, newGroups) { const map=new Map(); for(let g of existing) map.set(g.originalBookKey,g); for(let ng of newGroups){ const eg=map.get(ng.originalBookKey); if(eg){ const itemsMap=new Map(); for(let it of eg.items) itemsMap.set(`${it.highlight}|${normalizeLocation(it.location)}`,it); for(let nit of ng.items){ const key=`${nit.highlight}|${normalizeLocation(nit.location)}`; if(itemsMap.has(key)){ const existingItem=itemsMap.get(key); const notesSet=new Set(existingItem.notes); for(let n of nit.notes) if(!notesSet.has(n)) existingItem.notes.push(n); } else eg.items.push(nit); } eg.readYear=extractReadYearFromItems(eg.items); eg.readYearMonth=extractReadYearMonthStr(eg.items); } else existing.push(ng); } return existing; }
+    function enrichBooksWithMeta(groups) { return groups.map(g=>({...g, coverUrl:'https://via.placeholder.com/80x110?text=No+Cover', readYear:extractReadYearFromItems(g.items), readYearMonth:extractReadYearMonthStr(g.items)})); }
+
+    // 渲染书籍列表
+    function renderBooksList() {
+        if(!groupsData.length){ booksViewDiv.innerHTML='<div class="empty-state">📭 暂无书籍，请解析剪贴内容</div>'; return; }
+        const yearMap=new Map(); for(let g of groupsData){ const y=g.readYear||0; if(!yearMap.has(y)) yearMap.set(y,[]); yearMap.get(y).push(g); }
+        const sortedYears=Array.from(yearMap.keys()).sort((a,b)=>b-a);
+        let html='';
+        for(let y of sortedYears){
+            html+=`<div class="year-group"><div class="year-title">📅 ${y}年</div><div class="books-grid">`;
+            for(let g of yearMap.get(y)){
+                const safeTitle=escapeHtml(g.bookTitle), safeAuthor=escapeHtml(g.bookAuthor);
+                const displayDate=g.readYearMonth||(g.readYear?g.readYear+'年':'未知时间');
+                html+=`<div class="book-card clickable" data-originalkey="${escapeHtml(g.originalBookKey)}" data-bookkey="${escapeHtml(g.bookKey)}"><div class="cover-container"><img class="book-cover" data-originalkey="${escapeHtml(g.originalBookKey)}" data-title="${escapeHtml(g.bookTitle)}" data-author="${escapeHtml(g.bookAuthor)}" src="https://via.placeholder.com/80x110?text=No+Cover" alt="封面"><div class="upload-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">📷</div><div class="reset-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">↺</div><div class="paste-cover-icon" data-originalkey="${escapeHtml(g.originalBookKey)}">🔗</div></div><div class="book-info"><div class="book-title-display" data-field="title">${safeTitle}</div><div class="book-author-display" data-field="author">${safeAuthor}</div><div class="book-date">📅 ${escapeHtml(displayDate)}</div></div></div>`;
+            }
+            html+=`</div></div>`;
+        }
+        booksViewDiv.innerHTML=html;
+        for(let img of document.querySelectorAll('.book-cover')){ const ok=img.getAttribute('data-originalkey'), title=img.getAttribute('data-title'), author=img.getAttribute('data-author'); loadCoverForBook(ok,title,author,img); }
+        for(let icon of document.querySelectorAll('.upload-cover-icon')) icon.addEventListener('click',async e=>{ e.stopPropagation(); const key=icon.getAttribute('data-originalkey'); const img=document.querySelector(`.book-cover[data-originalkey="${key}"]`); if(img) await uploadCover(key,img); });
+        for(let icon of document.querySelectorAll('.reset-cover-icon')) icon.addEventListener('click',async e=>{ e.stopPropagation(); const key=icon.getAttribute('data-originalkey'); const img=document.querySelector(`.book-cover[data-originalkey="${key}"]`); if(img){ const title=img.getAttribute('data-title'), author=img.getAttribute('data-author'); await resetCover(key,title,author,img); } });
+        for(let icon of document.querySelectorAll('.paste-cover-icon')) icon.addEventListener('click',async e=>{ e.stopPropagation(); const key=icon.getAttribute('data-originalkey'); const img=document.querySelector(`.book-cover[data-originalkey="${key}"]`); if(img) await pasteCoverUrl(key,img); });
+        for(let card of document.querySelectorAll('.book-card')) card.addEventListener('contextmenu',e=>{ e.preventDefault(); const key=card.getAttribute('data-originalkey'); showConfirm('确定要删除这本书及其所有标注吗？',()=>{ const idx=groupsData.findIndex(g=>g.originalBookKey===key); if(idx!==-1){ groupsData.splice(idx,1); saveUserData(); saveToHistory(groupsData); renderBooksList(); if(currentView==='details' && currentBookKey===key) backToBooks(); } }); });
+        document.querySelectorAll('.book-card.clickable').forEach(card=>card.addEventListener('click',e=>{ if(e.target.classList.contains('book-title-display')||e.target.classList.contains('book-author-display')||e.target.classList.contains('upload-cover-icon')||e.target.classList.contains('reset-cover-icon')||e.target.classList.contains('paste-cover-icon')||card.classList.contains('editing-mode')) return; const bk=card.getAttribute('data-bookkey'); showDetailsView(bk); }));
+        document.querySelectorAll('.book-title-display').forEach(el=>{ const card=el.closest('.book-card'); const key=card.getAttribute('data-originalkey'); const book=groupsData.find(g=>g.originalBookKey===key); if(book) el.addEventListener('click',e=>{ e.stopPropagation(); enableBookInlineEdit(book,'title',el); }); });
+        document.querySelectorAll('.book-author-display').forEach(el=>{ const card=el.closest('.book-card'); const key=card.getAttribute('data-originalkey'); const book=groupsData.find(g=>g.originalBookKey===key); if(book) el.addEventListener('click',e=>{ e.stopPropagation(); enableBookInlineEdit(book,'author',el); }); });
+    }
+    function enableBookInlineEdit(book,field,element){ const card=element.closest('.book-card'); if(!card) return; card.classList.add('editing-mode'); const orig=field==='title'?book.bookTitle:book.bookAuthor; const input=document.createElement('input'); input.type='text'; input.value=orig; input.className=field==='title'?'book-title editable':'book-author editable'; element.replaceWith(input); input.focus(); const save=()=>{ const newVal=input.value.trim()||orig; if(field==='title') book.bookTitle=newVal; else book.bookAuthor=newVal; book.bookKey=`${book.bookTitle}|${book.bookAuthor}`; saveUserData(); saveToHistory(groupsData); renderBooksList(); }; input.addEventListener('blur',save); input.addEventListener('keypress',e=>{ if(e.key==='Enter') input.blur(); }); }
+
+    // 详情视图（含批量编辑）
+    let batchMode = false;
+    function showDetailsView(bookKey) { const book=groupsData.find(g=>g.bookKey===bookKey); if(!book) return; currentBookKey=bookKey; currentView='details'; isEditMode=false; batchMode=false; inputPanel.classList.add('hidden'); searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; renderDetailsView(book); booksViewDiv.style.display='none'; detailsViewDiv.style.display='block'; }
+    function backToBooks() { booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; isEditMode=false; batchMode=false; if(panelVisible) inputPanel.classList.remove('hidden'); renderBooksList(); }
+    function autoResizeTextarea(ta) { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,200)+'px'; }
+    function startEditAnnotation(book, idx, element) { if(isEditMode||batchMode) return; isEditMode=true; const item=book.items[idx]; const noteCard=element.closest('.note-card'); const notesHtml=item.notes.map(n=>`<div class="note-text">${escapeHtml(n)}</div>`).join(''); const metaHtml=`<div class="note-meta">${item.location?`📍 位置 ${escapeHtml(item.location)}`:''}${item.date?` · 📅 ${escapeHtml(item.date)}`:''}</div>`; noteCard.innerHTML=`<textarea class="edit-highlight-textarea">${escapeHtml(item.highlight)}</textarea><button class="delete-icon" data-index="${idx}">🗑️</button>${notesHtml}${metaHtml}`; const ta=noteCard.querySelector('.edit-highlight-textarea'); autoResizeTextarea(ta); ta.addEventListener('input',function(){ autoResizeTextarea(this); }); ta.focus(); const saveOnBlur=()=>{ const newText=ta.value.trim(); if(newText && book.items[idx]) book.items[idx].highlight=newText; const idx2=groupsData.findIndex(g=>g.bookKey===book.bookKey); if(idx2!==-1) groupsData[idx2]=book; saveUserData(); saveToHistory(groupsData); isEditMode=false; renderDetailsView(book,false); }; ta.addEventListener('blur',saveOnBlur); const delBtn=noteCard.querySelector('.delete-icon'); delBtn.addEventListener('click',(e)=>{ e.stopPropagation(); book.items.splice(idx,1); saveUserData(); saveToHistory(groupsData); isEditMode=false; renderDetailsView(book,false); }); }
+    function renderDetailsView(book, editMode=false) {
+        const {bookTitle,bookAuthor,items,readYearMonth}=book;
+        const displayDate=readYearMonth||(book.readYear?book.readYear+'年':'未知');
+        let itemsHtml='';
+        for(let idx=0; idx<items.length; idx++){
+            const item=items[idx];
+            const notesHtml=item.notes.map(n=>`<div class="note-text">${escapeHtml(n)}</div>`).join('');
+            const metaHtml=`<div class="note-meta">${item.location?`📍 位置 ${escapeHtml(item.location)}`:''}${item.date?` · 📅 ${escapeHtml(item.date)}`:''}</div>`;
+            itemsHtml+=`<div class="note-card" data-item-index="${idx}" ${batchMode?`style="cursor:pointer;"`:''}>${batchMode?`<div class="checkbox" style="position:absolute; left:-1.2rem;">&nbsp;</div>`:''}<div class="highlight-text" data-index="${idx}">${escapeHtml(item.highlight)}</div>${notesHtml}${metaHtml}</div>`;
+        }
+        const batchBar = batchMode ? `<div class="batch-bar"><button id="batchDeleteBtn" class="primary">删除选中标注</button><button id="exitBatchBtn" class="edit-btn">退出批量编辑</button></div>` : '';
+        detailsViewDiv.innerHTML = `<button class="back-button" id="backToBooksBtn">← 返回书籍列表</button><div class="details-header"><div class="title-author"><h2>${escapeHtml(bookTitle)}</h2><div class="author">${escapeHtml(bookAuthor)}</div><div class="read-date">阅读时间 ${escapeHtml(displayDate)}</div></div><button id="batchModeBtn" class="batch-edit-btn" style="${batchMode?'display:none;':''}">📋 批量编辑</button></div><div id="itemsContainer">${itemsHtml||'<div class="empty-state">暂无标注</div>'}</div>${batchBar}</div>`;
+        document.getElementById('backToBooksBtn').addEventListener('click',backToBooks);
+        if(!batchMode) document.getElementById('batchModeBtn')?.addEventListener('click',()=>{ batchMode=true; renderDetailsView(book,false); });
+        if(batchMode){
+            // 为每个 note-card 绑定点击选中/取消
+            const cards = document.querySelectorAll('.note-card');
+            cards.forEach((card, idx) => {
+                card.classList.add('batch-selectable');
+                card.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    card.classList.toggle('selected');
+                });
+            });
+            document.getElementById('batchDeleteBtn')?.addEventListener('click',()=>{
+                const selected = Array.from(document.querySelectorAll('.note-card.selected')).map(card => {
+                    const idxAttr = card.getAttribute('data-item-index');
+                    return idxAttr ? parseInt(idxAttr) : -1;
+                }).filter(i=>i>=0);
+                if(!selected.length){ alert('请至少选择一个标注'); return; }
+                showConfirm(`确定要删除选中的 ${selected.length} 条标注吗？`,()=>{
+                    const newItems = book.items.filter((_,i)=>!selected.includes(i));
+                    book.items = newItems;
+                    const idx = groupsData.findIndex(g=>g.bookKey===book.bookKey);
+                    if(idx!==-1) groupsData[idx]=book;
+                    saveUserData(); saveToHistory(groupsData); batchMode=false; renderDetailsView(book,false);
+                });
+            });
+            document.getElementById('exitBatchBtn')?.addEventListener('click',()=>{ batchMode=false; renderDetailsView(book,false); });
+        }
+        if(!editMode && !batchMode) document.querySelectorAll('.highlight-text').forEach(el=>el.addEventListener('click',(e)=>{ e.stopPropagation(); const idx=parseInt(el.getAttribute('data-index')); if(!isNaN(idx)) startEditAnnotation(book,idx,el); }));
+    }
+
+    // 导入导出
+    async function performParse() { if(!currentUser){ alert('请先登录'); return; } const raw=document.getElementById('clippingsInput').value; if(!raw.trim()){ alert('请先粘贴 Kindle My Clippings 内容'); return; } const orig=booksViewDiv.innerHTML; booksViewDiv.innerHTML='<div class="empty-state">⏳ 正在解析并合并数据...</div>'; const newGroups=parseClippings(raw); if(!newGroups.length){ alert('未解析到有效标注/笔记，请检查格式'); booksViewDiv.innerHTML=orig; return; } const enriched=enrichBooksWithMeta(newGroups); groupsData=groupsData.length?mergeGroups(groupsData,enriched):enriched; saveUserData(); saveToHistory(groupsData); renderBooksList(); booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; if(panelVisible) inputPanel.classList.remove('hidden'); }
+    function loadExample() { if(!currentUser){ alert('请先登录'); return; } document.getElementById('clippingsInput').value=`过生日的女孩 (Alex)\n- 您在第 26 页（位置 #136-138）的标注 | 添加于 2025年12月15日星期一 下午10:25:09\n\n雨被风吹着，敲打在玻璃窗上，发出错落不齐的响声。\n==========\nCanITellYouSomething (Alex)\n- 您在第 12 页（位置 #140-141）的标注 | 添加于 2025年12月23日星期二 下午8:15:38\n\nboth legs of the journey.\n- 您在第 12 页（位置 #141）的笔记 | 添加于 2025年12月23日星期二 下午8:16:49\n\n这里leg\n==========\nOutOnaLimb (Hannah Bonam-Young)\n- 您在第 25 页（位置 #335-336）的标注 | 添加于 2025年11月30日星期日 下午11:36:49\n\nhis smile is beaming—far brighter than the sun.\n==========`; performParse(); }
+    function clearAllGroups() { if(!currentUser){ alert('请先登录'); return; } showConfirm('清空所有分组？',()=>{ groupsData=[]; saveUserData(); saveToHistory(groupsData); renderBooksList(); booksViewDiv.style.display='block'; detailsViewDiv.style.display='none'; searchResultsView.style.display='none'; backFromSearchBtn.style.display='none'; currentView='books'; if(panelVisible) inputPanel.classList.remove('hidden'); }); }
+    function saveUserData() { if(currentUser) localStorage.setItem(`clippings_${currentUser}_data`, JSON.stringify(groupsData)); }
+    function loadUserData() { if(!currentUser){ groupsData=[]; renderBooksList(); return; } const stored=localStorage.getItem(`clippings_${currentUser}_data`); if(stored){ try{ groupsData=JSON.parse(stored); groupsData=groupsData.map(g=>({...g, readYear:extractReadYearFromItems(g.items), readYearMonth:extractReadYearMonthStr(g.items)})); renderBooksList(); saveToHistory(groupsData); }catch(e){ groupsData=[]; renderBooksList(); } }else{ groupsData=[]; renderBooksList(); } }
+
+    // 初始化
+    const storedUser=localStorage.getItem('clippings_currentUser');
+    if(storedUser){ currentUser=storedUser; loadUserData(); }
+    updateAuthUI();
+    document.getElementById('modeToggleBtn').addEventListener('click',()=>{ timelineMode=timelineMode==='year'?'timeline':'year'; const btn=document.getElementById('modeToggleBtn'); btn.textContent=timelineMode==='year'?'📅 年份分组':'📅 时间轴模式'; btn.classList.toggle('active',timelineMode==='timeline'); if(document.getElementById('timelineModal').style.display==='flex') showTimeline(); });
+    document.getElementById('timelineBtn').addEventListener('click',showTimeline);
+    document.getElementById('closeModalBtn').addEventListener('click',()=>document.getElementById('timelineModal').style.display='none');
+    window.addEventListener('click',e=>{ if(e.target===document.getElementById('timelineModal')) document.getElementById('timelineModal').style.display='none'; });
+    document.getElementById('undoBtn').addEventListener('click',undo);
+    document.getElementById('redoBtn').addEventListener('click',redo);
+    document.getElementById('parseBtn').addEventListener('click',performParse);
+    document.getElementById('loadExampleBtn').addEventListener('click',loadExample);
+    document.getElementById('clearAllBtn').addEventListener('click',clearAllGroups);
+</script>
+</body>
+</html>
